@@ -172,7 +172,6 @@ const Dashboard: React.FC = () => {
                     </div>
                     <div className="flex items-center space-x-1">
                       {post.aiGenerated ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
-                      <span>{post.createdBy}</span>
                     </div>
                   </div>
                 </div>

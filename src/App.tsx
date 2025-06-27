@@ -13,6 +13,12 @@ import AdminDashboard from './pages/AdminDashboard';
 const AppContent: React.FC = () => {
   const { isAuthenticated, login } = useAuth();
 
+  // Add state for login form
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
@@ -32,12 +38,46 @@ const AppContent: React.FC = () => {
             <p className="text-center text-sm text-gray-500 dark:text-gray-400 mb-4">
               This is a demo environment. In production, this would integrate with EY's enterprise SSO.
             </p>
-            <button 
-              onClick={() => login('demo@ey.com', 'demo')}
-              className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-medium py-2 px-4 rounded-lg transition-colors"
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setLoading(true);
+                setError(null);
+                try {
+                  await login(email, password);
+                } catch (err: any) {
+                  setError(err.message || 'Login failed');
+                } finally {
+                  setLoading(false);
+                }
+              }}
+              className="space-y-4"
             >
-              Continue to Dashboard
-            </button>
+              <input
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                required
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+              />
+              <input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                required
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+              />
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-medium py-2 px-4 rounded-lg transition-colors disabled:opacity-60"
+              >
+                {loading ? 'Logging in...' : 'Login'}
+              </button>
+              {error && <div className="text-red-500 text-center text-sm">{error}</div>}
+            </form>
           </div>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { User } from '../types';
+import { getUser, createUser } from '../api/users';
 
 interface AuthContextType {
   user: User | null;
@@ -22,22 +23,30 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-// Mock user for demo purposes
-const mockUser: User = {
-  id: '1',
-  name: 'Sarah Johnson',
-  email: 'sarah.johnson@ey.com',
-  role: 'Admin',
-  avatar: 'https://images.pexels.com/photos/3783725/pexels-photo-3783725.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
-  lastActive: new Date()
-};
-
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(mockUser);
+  const [user, setUser] = useState<User | null>(null);
 
   const login = async (email: string, password: string) => {
-    // Mock login - in real app would validate with EY SSO
-    setUser(mockUser);
+    // Try to fetch the user from backend
+    let backendUser = null;
+    try {
+      backendUser = await getUser(email);
+    } catch (err) {
+      // ignore, will try to create
+    }
+    if (!backendUser) {
+      // If not found, create the user
+      const newUser = {
+        id: email, // using email as id for demo
+        name: email.split('@')[0],
+        email,
+        role: 'Admin',
+        avatar: '',
+        lastActive: new Date().toISOString()
+      };
+      backendUser = await createUser(newUser);
+    }
+    setUser(backendUser);
   };
 
   const logout = () => {
