@@ -1,10 +1,10 @@
 export interface User {
-  id: string;
+  user_id: string;
   name: string;
   email: string;
   role: 'Admin' | 'Editor' | 'Viewer';
   avatar?: string;
-  lastActive: Date;
+  lastActive?: Date;
 }
 
 export interface SocialPost {
@@ -86,3 +86,35 @@ export interface AISettings {
 }
 
 export type Theme = 'light' | 'dark';
+
+export interface ContentCreate {
+  title: string;
+  body: string;
+  author_id: string;
+  media?: string[];
+  status?: string;
+  platforms?: string[];
+  scheduled_for?: string;
+}
+
+export interface ContentUpdate {
+  title?: string;
+  body?: string;
+  media?: string[];
+  status?: string;
+  platforms?: string[];
+  scheduled_for?: string;
+}
+
+export interface ContentOut {
+  id: string;
+  title: string;
+  body: string;
+  author_id: string;
+  created_at: string;
+  updated_at: string;
+  media?: string[];
+  status?: string;
+  platforms?: string[];
+  scheduled_for?: string;
+}

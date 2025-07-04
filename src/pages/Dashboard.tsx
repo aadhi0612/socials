@@ -18,15 +18,28 @@ import Button from '../components/UI/Button';
 import MetricCard from '../components/UI/MetricCard';
 import { mockPosts, mockPlatforms } from '../data/mockData';
 import { format } from 'date-fns';
+import { listContent } from '../api/content';
+import { ContentOut } from '../types';
 
 const Dashboard: React.FC = () => {
   const [aiMode, setAiMode] = useState(false);
+  const [content, setContent] = useState<ContentOut[]>([]);
+  const [loadingContent, setLoadingContent] = useState(true);
+  const [contentError, setContentError] = useState<string | null>(null);
 
   const totalEngagement = mockPosts.reduce((sum, post) => sum + post.metrics.engagement, 0);
   const totalImpressions = mockPosts.reduce((sum, post) => sum + post.metrics.impressions, 0);
   const totalFollowers = mockPlatforms.filter(p => p.connected).reduce((sum, p) => sum + p.followers, 0);
 
-  const recentPosts = mockPosts.slice(0, 3);
+  React.useEffect(() => {
+    setLoadingContent(true);
+    listContent()
+      .then(setContent)
+      .catch(err => setContentError(err.message || 'Failed to load content'))
+      .finally(() => setLoadingContent(false));
+  }, []);
+
+  const recentPosts = content.slice(0, 3);
   const scheduledPosts = mockPosts.filter(post => post.status === 'scheduled');
 
   return (
@@ -118,65 +131,36 @@ const Dashboard: React.FC = () => {
               </Button>
             </div>
             
-            <div className="space-y-4">
-              {recentPosts.map((post) => (
-                <div
-                  key={post.id}
-                  className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center space-x-2">
-                      <Badge variant={post.status === 'published' ? 'success' : post.status === 'scheduled' ? 'warning' : 'default'}>
-                        {post.status}
-                      </Badge>
-                      {post.aiGenerated && (
-                        <Badge variant="info">
-                          <Bot className="w-3 h-3 mr-1" />
-                          AI Generated
+            {loadingContent ? (
+              <div>Loading content...</div>
+            ) : contentError ? (
+              <div className="text-red-600">{contentError}</div>
+            ) : (
+              <div className="space-y-4">
+                {recentPosts.map((post) => (
+                  <div
+                    key={post.id}
+                    className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center space-x-2">
+                        <Badge variant={post.status === 'published' ? 'success' : post.status === 'scheduled' ? 'warning' : 'default'}>
+                          {post.status}
                         </Badge>
-                      )}
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-1">
-                      {post.platforms.map((platform, index) => (
-                        <div
-                          key={platform.id}
-                          className="w-6 h-6 rounded bg-gray-100 dark:bg-gray-700 flex items-center justify-center"
-                          title={platform.name}
-                        >
-                          <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
-                            {platform.name.charAt(0)}
-                          </span>
-                        </div>
-                      ))}
+                    <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-1">{post.title}</h3>
+                    <p className="text-gray-900 dark:text-white mb-3 line-clamp-2">
+                      {post.body}
+                    </p>
+                    <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+                      <span>By: {post.author_id}</span>
+                      <span>{new Date(post.created_at).toLocaleString()}</span>
                     </div>
                   </div>
-                  
-                  <p className="text-gray-900 dark:text-white mb-3 line-clamp-2">
-                    {post.content}
-                  </p>
-                  
-                  <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-                    <div className="flex items-center space-x-4">
-                      <span className="flex items-center space-x-1">
-                        <Heart className="w-4 h-4" />
-                        <span>{post.metrics.likes}</span>
-                      </span>
-                      <span className="flex items-center space-x-1">
-                        <MessageCircle className="w-4 h-4" />
-                        <span>{post.metrics.comments}</span>
-                      </span>
-                      <span className="flex items-center space-x-1">
-                        <Share2 className="w-4 h-4" />
-                        <span>{post.metrics.shares}</span>
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      {post.aiGenerated ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </Card>
         </div>
 
