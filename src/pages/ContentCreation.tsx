@@ -34,6 +34,7 @@ const ContentCreation: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [successType, setSuccessType] = useState<'published' | 'scheduled' | null>(null);
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
   const [postId, setPostId] = useState<string>(uuidv4());
   const [showAIImageGen, setShowAIImageGen] = useState(false);
@@ -83,6 +84,7 @@ const ContentCreation: React.FC = () => {
           media,
         });
         setSuccess(true);
+        setSuccessType('scheduled');
         setError(null);
       } catch (err: any) {
         setError(err.message || 'Failed to schedule content');
@@ -114,6 +116,7 @@ const ContentCreation: React.FC = () => {
           media,
         });
         setSuccess(true);
+        setSuccessType('published');
         setError(null);
       } catch (err: any) {
         setError(err.message || 'Failed to publish content');
@@ -289,9 +292,14 @@ const ContentCreation: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    if (aiImage) {
+      console.log("AI Image URL:", aiImage);
+    }
+  }, [aiImage]);
+
   return (
-    <>
-      <div style={{color: 'red', fontWeight: 'bold'}}>DEBUG-UNIQUE-TEXT-999</div>
+    <div className="min-h-screen flex bg-gray-900">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -322,7 +330,9 @@ const ContentCreation: React.FC = () => {
         
         {success && (
           <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-            <p className="text-sm text-green-800 dark:text-green-300">Content published successfully!</p>
+            <p className="text-sm text-green-800 dark:text-green-300">
+              {successType === 'scheduled' ? 'Content scheduled successfully!' : 'Content published successfully!'}
+            </p>
           </div>
         )}
 
@@ -409,157 +419,158 @@ const ContentCreation: React.FC = () => {
 
             {/* Media Upload */}
             <Card>
-  <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-    Media Assets
-  </h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Media Assets
+              </h2>
 
-  {/* Media Options Grid */}
-  <div className="flex gap-4">
-    {/* Upload Images */}
-    <div
-      className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-yellow-500 dark:hover:border-yellow-400 transition-colors cursor-pointer flex-1"
-      onClick={() => document.getElementById('media-upload-input')?.click()}
-      tabIndex={0}
-      role="button"
-      aria-label="Upload Images"
-      onKeyDown={e => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          document.getElementById('media-upload-input')?.click();
-        }
-      }}
-      style={{ minHeight: 120 }}
-    >
-      <input
-        id="media-upload-input"
-        type="file"
-        accept="image/*"
-        style={{ display: 'none' }}
-        onChange={handleImageSelect}
-      />
-      <Upload className="mx-auto mb-2" />
-      <div>Upload Images</div>
-      <div className="text-xs text-gray-500">PNG, JPG up to 10MB</div>
-    </div>
+              {/* Media Options Grid */}
+              <div className="flex gap-4">
+                {/* Upload Images */}
+                <div
+                  className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-yellow-500 dark:hover:border-yellow-400 transition-colors cursor-pointer flex-1"
+                  onClick={() => document.getElementById('media-upload-input')?.click()}
+                  tabIndex={0}
+                  role="button"
+                  aria-label="Upload Images"
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      document.getElementById('media-upload-input')?.click();
+                    }
+                  }}
+                  style={{ minHeight: 120 }}
+                >
+                  <input
+                    id="media-upload-input"
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    onChange={handleImageSelect}
+                  />
+                  <Upload className="mx-auto mb-2" />
+                  <div>Upload Images</div>
+                  <div className="text-xs text-gray-500">PNG, JPG up to 10MB</div>
+                </div>
 
-    {/* AI Generate */}
-    <div
-      className="border-2 border-dashed border-purple-400 rounded-lg p-6 text-center hover:border-purple-500 dark:hover:border-purple-400 transition-colors cursor-pointer flex-1"
-      onClick={() => setShowAIImageGen(true)}
-      tabIndex={0}
-      role="button"
-      aria-label="AI Generate"
-      onKeyDown={e => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          setShowAIImageGen(true);
-        }
-      }}
-      style={{ minHeight: 120 }}
-    >
-      <Wand2 className="mx-auto mb-2 w-8 h-8 text-purple-500" />
-      <div className="text-sm font-medium text-gray-900 dark:text-white">AI Generate</div>
-      <div className="text-xs text-gray-500 dark:text-gray-400">Create visuals with AI</div>
-    </div>
-  </div>
+                {/* AI Generate */}
+                <div
+                  className="border-2 border-dashed border-purple-400 rounded-lg p-6 text-center hover:border-purple-500 dark:hover:border-purple-400 transition-colors cursor-pointer flex-1"
+                  onClick={() => setShowAIImageGen(true)}
+                  tabIndex={0}
+                  role="button"
+                  aria-label="AI Generate"
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      setShowAIImageGen(true);
+                    }
+                  }}
+                  style={{ minHeight: 120 }}
+                >
+                  <Wand2 className="mx-auto mb-2 w-8 h-8 text-purple-500" />
+                  <div className="text-sm font-medium text-gray-900 dark:text-white">AI Generate</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">Create visuals with AI</div>
+                </div>
+              </div>
 
-  
+              
 
-  {/* AI Image Generation UI */}
-  {showAIImageGen && (
-    <div className="mt-4 p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-medium text-purple-900 dark:text-purple-300">
-          AI Image Generation
-        </h3>
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => {
-            setShowAIImageGen(false);
-            setAiImagePrompt('');
-            setAiImageError(null);
-          }}
-          aria-label="Close AI Image Generation"
-        >
-          <X className="w-4 h-4" />
-        </Button>
-      </div>
-      <div className="space-y-3">
-        <input
-          type="text"
-          value={aiImagePrompt}
-          onChange={e => setAiImagePrompt(e.target.value)}
-          placeholder="Describe the image you want to generate..."
-          className="w-full px-3 py-2 border border-purple-300 dark:border-purple-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-          autoFocus
-        />
-        <Button
-          onClick={handleAIImageGenerate}
-          disabled={!aiImagePrompt.trim() || aiImageLoading}
-          loading={aiImageLoading}
-          className="w-full bg-purple-600 hover:bg-purple-700 text-white"
-        >
-          <Wand2 className="w-4 h-4 mr-2" />
-          {aiImageLoading ? 'Generating Image...' : 'Generate Image'}
-        </Button>
-        {aiImageError && (
-          <div className="text-sm text-red-600 dark:text-red-400">{aiImageError}</div>
-        )}
-      </div>
-    </div>
-  )}
+              {/* AI Image Generation UI */}
+              {showAIImageGen && (
+                <div className="mt-4 p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-medium text-purple-900 dark:text-purple-300">
+                      AI Image Generation
+                    </h3>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setShowAIImageGen(false);
+                        setAiImagePrompt('');
+                        setAiImageError(null);
+                      }}
+                      aria-label="Close AI Image Generation"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <div className="space-y-3">
+                    <input
+                      type="text"
+                      value={aiImagePrompt}
+                      onChange={e => setAiImagePrompt(e.target.value)}
+                      placeholder="Describe the image you want to generate..."
+                      className="w-full px-3 py-2 border border-purple-300 dark:border-purple-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      autoFocus
+                    />
+                    <Button
+                      onClick={handleAIImageGenerate}
+                      disabled={!aiImagePrompt.trim() || aiImageLoading}
+                      loading={aiImageLoading}
+                      className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                    >
+                      <Wand2 className="w-4 h-4 mr-2" />
+                      {aiImageLoading ? 'Generating Image...' : 'Generate Image'}
+                    </Button>
+                    {aiImageError && (
+                      <div className="text-sm text-red-600 dark:text-red-400">{aiImageError}</div>
+                    )}
+                  </div>
+                </div>
+              )}
 
-  {/* Show uploaded images */}
-  <div className="mt-4 flex flex-wrap gap-2">
-    {previewUrls.map((url, idx) => (
-      <div
-        key={idx}
-        className="relative border rounded bg-gray-50 flex items-center justify-center"
-        style={{ height: 120, width: 160 }}
-      >
-        <img
-          src={url}
-          alt={`media-${idx}`}
-          style={{ height: '100%', width: '100%', objectFit: 'cover', borderRadius: 8 }}
-        />
-        <button
-          className="absolute top-1 right-1 bg-white rounded-full p-1 shadow hover:bg-red-100"
-          onClick={() => {
-            setSelectedFiles(files => files.filter((_, i) => i !== idx));
-            setPreviewUrls(urls => urls.filter((_, i) => i !== idx));
-          }}
-          type="button"
-          aria-label="Remove image"
-        >
-          <X className="w-3 h-3" />
-        </button>
-      </div>
-    ))}
+              {/* Show uploaded images */}
+              <div className="mt-4 flex flex-wrap gap-2">
+                {previewUrls.map((url, idx) => (
+                  <div
+                    key={idx}
+                    className="relative border rounded bg-gray-50 flex items-center justify-center"
+                    style={{ height: 120, width: 160 }}
+                  >
+                    <img
+                      src={url}
+                      alt={`media-${idx}`}
+                      style={{ height: '100%', width: '100%', objectFit: 'cover', borderRadius: 8 }}
+                    />
+                    <button
+                      className="absolute top-1 right-1 bg-white rounded-full p-1 shadow hover:bg-red-100"
+                      onClick={() => {
+                        setSelectedFiles(files => files.filter((_, i) => i !== idx));
+                        setPreviewUrls(urls => urls.filter((_, i) => i !== idx));
+                      }}
+                      type="button"
+                      aria-label="Remove image"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
 
-    {/* Show AI generated image */}
-    {aiImage && (
-      <div
-        className="relative border rounded bg-gray-50 flex items-center justify-center"
-        style={{ height: 120, width: 160 }}
-      >
-        <img
-          src={aiImage}
-          alt="AI generated"
-          style={{ height: '100%', width: '100%', objectFit: 'cover', borderRadius: 8 }}
-        />
-        <button
-          className="absolute top-1 right-1 bg-white rounded-full p-1 shadow hover:bg-red-100"
-          onClick={handleRemoveAIImage}
-          type="button"
-          aria-label="Remove AI image"
-        >
-          <X className="w-3 h-3" />
-        </button>
-        <div className="absolute bottom-1 left-1 bg-purple-600 text-white text-xs px-2 py-1 rounded">
-          AI
-        </div>
-      </div>
-    )}
-  </div>
+                {/* Show AI generated image */}
+                {aiImage && (
+                  <div
+                    className="relative border rounded bg-gray-50 flex items-center justify-center"
+                    style={{ height: 120, width: 160 }}
+                  >
+                    <img
+                      src={aiImage}
+                      alt="AI generated"
+                      onError={() => setAiImageError('Failed to load generated image')}
+                      style={{ height: '100%', width: '100%', objectFit: 'cover', borderRadius: 8 }}
+                    />
+                    <button
+                      className="absolute top-1 right-1 bg-white rounded-full p-1 shadow hover:bg-red-100"
+                      onClick={handleRemoveAIImage}
+                      type="button"
+                      aria-label="Remove AI image"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                    <div className="absolute bottom-1 left-1 bg-purple-600 text-white text-xs px-2 py-1 rounded">
+                      AI
+                    </div>
+                  </div>
+                )}
+              </div>
             </Card>
 
             {/* Platform Selection */}
@@ -751,7 +762,7 @@ const ContentCreation: React.FC = () => {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

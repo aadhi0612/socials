@@ -43,6 +43,7 @@ def generate_text(request: PromptRequest):
         result = response['body'].read().decode('utf-8')
         print("Raw model response:", result)  # Debug log
         data = json.loads(result)
+        print("Parsed data:", data)
         generated_text = ""
         try:
             if "output" in data:
@@ -69,15 +70,45 @@ def generate_image(request: ImagePromptRequest):
         region_name=os.getenv("AWS_BEDROCK_REGION"),
     )
     try:
+        # Use the correct request format for Nova Canvas
+        native_request = {
+            "taskType": "TEXT_IMAGE",
+            "textToImageParams": {
+                "text": request.prompt
+            },
+            "imageGenerationConfig": {
+                "numberOfImages": 1,
+                "quality": "standard",
+                "height": 512,
+                "width": 512,
+                "seed": 0  # You can make this random if needed
+            }
+        }
+        
         response = bedrock.invoke_model(
-            modelId="amazon.nova-canvas-v1:0",  # Nova Canvas model
+            modelId="amazon.nova-canvas-v1:0",
             contentType="application/json",
             accept="application/json",
-            body=json.dumps({"inputText": request.prompt})
+            body=json.dumps(native_request)
         )
-        result = response['boqdy'].read().decode('utf-8')
-        # Parse the result to extract the image URL or base64
-        image_url = json.loads(result).get("imageUrl", "")
+        
+        result = response['body'].read().decode('utf-8')
+        print("Raw model response:", result)  # Debug log
+        
+        data = json.loads(result)
+        print("Parsed data:", data)
+        
+        # Extract base64 image data directly from the images array
+        base64_image = ""
+        if "images" in data and len(data["images"]) > 0:
+            base64_image = data["images"][0]
+        
+        # Create the data URL for the frontend
+        image_url = f"data:image/png;base64,{base64_image}" if base64_image else ""
+        print("Returning image_url:", image_url)
+        
         return {"image_url": image_url}
+        
     except Exception as e:
+        print(f"Error: {e}")
         raise HTTPException(status_code=500, detail=str(e)) 

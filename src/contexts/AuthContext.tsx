@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { User } from '../types';
 import { getUser, createUser, login } from '../api/users';
 
@@ -9,6 +9,7 @@ interface AuthContextType {
   register: (userData: { name: string; email: string; password: string }) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
+  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -21,57 +22,89 @@ export const useAuth = () => {
   return context;
 };
 
-interface AuthProviderProps {
-  children: ReactNode;
-}
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(() => {
-    const stored = localStorage.getItem('user');
-    return stored ? JSON.parse(stored) : null;
-  });
-  const [token, setToken] = useState<string | null>(() => {
-    return localStorage.getItem('token');
-  });
+  // Restore from sessionStorage on mount
+  useEffect(() => {
+    const storedToken = sessionStorage.getItem('token');
+    const storedUser = sessionStorage.getItem('user');
+    if (storedToken) {
+      setToken(storedToken);
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+        setLoading(false);
+      } else {
+        // Fetch user from backend if not in storage
+        getUserFromToken(storedToken);
+      }
+    } else {
+      setLoading(false);
+    }
+  }, []);
+
+  const getUserFromToken = async (token: string) => {
+    try {
+      // You may need to decode the token to get user_id, or store user_id in sessionStorage
+      // For now, let's assume you store user_id in sessionStorage as well
+      const userId = sessionStorage.getItem('user_id');
+      if (userId) {
+        const backendUser = await getUser(userId, token);
+        setUser(backendUser);
+        sessionStorage.setItem('user', JSON.stringify(backendUser));
+      }
+    } catch (e) {
+      setUser(null);
+      setToken(null);
+      sessionStorage.removeItem('user');
+      sessionStorage.removeItem('token');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loginHandler = async (email: string, password: string) => {
-    console.log('loginHandler called', email, password);
-    // Try to login
     let loginResult = null;
     try {
-      loginResult = await login(email, password); // should return { token, user_id }
+      loginResult = await login(email, password);
       console.log('Login result:', loginResult);
     } catch (err) {
+      console.log('Login error:', err);
       throw new Error('Invalid credentials');
     }
-    // If login successful, fetch user profile with token
     if (loginResult && loginResult.user_id && loginResult.token) {
       setToken(loginResult.token);
-      console.log('About to store token:', loginResult.token);
-      localStorage.setItem('token', loginResult.token);
+      console.log('Storing token:', loginResult.token);
+      sessionStorage.setItem('token', loginResult.token);
+      sessionStorage.setItem('user_id', loginResult.user_id);
       const backendUser = await getUser(loginResult.user_id, loginResult.token);
       setUser(backendUser);
-      console.log('Saving user to localStorage:', backendUser);
-      localStorage.setItem('user', JSON.stringify(backendUser));
+      console.log('Storing user:', backendUser);
+      sessionStorage.setItem('user', JSON.stringify(backendUser));
+      console.log('Session storage after login:', {
+        token: sessionStorage.getItem('token'),
+        user_id: sessionStorage.getItem('user_id'),
+        user: sessionStorage.getItem('user')
+      });
     } else {
       console.log('Login failed: No token or user_id in loginResult', loginResult);
     }
   };
 
   const register = async (userData: { name: string; email: string; password: string }) => {
-    // Register new user
     const backendUser = await createUser(userData);
     setUser(backendUser);
-    localStorage.setItem('user', JSON.stringify(backendUser));
-    // Note: If your backend returns a token on register, set it here as well
+    sessionStorage.setItem('user', JSON.stringify(backendUser));
   };
 
   const logout = () => {
     setUser(null);
     setToken(null);
-    console.log('Removing user and token from localStorage');
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
+    sessionStorage.removeItem('user');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user_id');
   };
 
   return (
@@ -81,9 +114,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       login: loginHandler,
       register,
       logout,
-      isAuthenticated: !!user && !!token
+      isAuthenticated: !!user && !!token,
+      loading
     }}>
-      {children}
+      {!loading && children}
     </AuthContext.Provider>
   );
 };
