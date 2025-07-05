@@ -28,7 +28,15 @@ export async function getCurrentUser(id: string, token?: string) {
   return res.json();
 }
 
-export async function createUser(user: { name: string; email: string; password: string }) {
+export interface RegisterUser {
+  name: string;
+  email: string;
+  password: string;
+  aws_community?: string;
+  profile_pic_url?: string;
+}
+
+export async function createUser(user: RegisterUser) {
   const res = await fetch('http://localhost:8000/users/', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

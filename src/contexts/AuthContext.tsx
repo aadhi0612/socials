@@ -6,7 +6,7 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (userData: { name: string; email: string; password: string }) => Promise<void>;
+  register: (userData: any) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
   loading: boolean;
@@ -93,7 +93,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const register = async (userData: { name: string; email: string; password: string }) => {
+  const register = async (userData: any) => {
     const backendUser = await createUser(userData);
     setUser(backendUser);
     sessionStorage.setItem('user', JSON.stringify(backendUser));

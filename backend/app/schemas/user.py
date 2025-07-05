@@ -16,11 +16,14 @@ class UserOut(BaseModel):
     name: Optional[str] = None
     role: str
     is_active: bool
+    profile_pic_url: Optional[str] = None
 
 class UserCreate(BaseModel):
+    id: Optional[str] = None
     name: str
     email: EmailStr
     password: str
+    profile_pic_url: Optional[str] = None
 
 class UserUpdate(BaseModel):
     name: Optional[str] = None

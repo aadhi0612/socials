@@ -5,6 +5,11 @@ import bcrypt
 import uuid
 import jwt
 from datetime import datetime, timedelta
+from fastapi.responses import JSONResponse
+import boto3
+import os
+from uuid import uuid4
+from urllib.parse import quote_plus
 
 router = APIRouter(tags=["users"])
 
@@ -34,15 +39,19 @@ def create_user(user: UserCreate):
     from app.services.dynamodb_service import table
     hashed_pw = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     item = {
-        'id': str(uuid.uuid4()),
+        'id': user.id or str(uuid.uuid4()),
         'name': user.name,
         'email': user.email,
         'password': hashed_pw,
         'role': 'Viewer',
-        'is_active': True
+        'is_active': True,
     }
+    if user.profile_pic_url:
+        item['profile_pic_url'] = user.profile_pic_url
     table.put_item(Item=item)
     item['user_id'] = item['id']
+    if user.profile_pic_url:
+        item['profile_pic_url'] = user.profile_pic_url
     return UserOut(**item)
 
 @router.post("/login")
@@ -89,3 +98,27 @@ def get_user(user_id: str, current_user=Depends(get_current_user)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
+
+@router.post("/profile-pic-upload")
+async def get_profile_pic_upload_url(request: Request):
+    data = await request.json()
+    user_id = data.get('user_id')
+    if not user_id:
+        # If registering, generate a new user_id
+        user_id = str(uuid4())
+    key = f"users/{user_id}/profile.jpg"
+    s3 = boto3.client(
+        "s3",
+        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+        region_name=os.getenv("AWS_REGION"),
+    )
+    bucket = os.getenv("AWS_S3_BUCKET")
+    if not bucket:
+        raise HTTPException(status_code=500, detail="AWS_S3_BUCKET environment variable not set")
+    url = s3.generate_presigned_url(
+        ClientMethod="put_object",
+        Params={"Bucket": bucket, "Key": key, "ContentType": "image/jpeg"},
+        ExpiresIn=600,
+    )
+    return {"url": url, "key": key, "user_id": user_id}
