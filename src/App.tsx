@@ -11,6 +11,7 @@ import CampaignManager from './pages/CampaignManager';
 import AdminDashboard from './pages/AdminDashboard';
 import Register from './pages/Register';
 import Login from './pages/Login';
+import Main from './pages/Main';
 
 import { Link } from 'react-router-dom';
 
@@ -20,6 +21,7 @@ const AppContent: React.FC = () => {
   if (!isAuthenticated) {
     return (
       <Routes>
+          <Route path="/" element={<Main />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
