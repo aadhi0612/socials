@@ -30,7 +30,7 @@ const Header = () => {
         {
             id: 4,
             type: 'mention',
-            message: 'EY was mentioned in a LinkedIn post by a client',
+            message: 'Your company was mentioned in a LinkedIn post by a client',
             time: '2 hours ago',
             unread: false
         }

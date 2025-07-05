@@ -28,11 +28,11 @@ const Sidebar: React.FC = () => {
       <div className="p-6 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-lg flex items-center justify-center">
-            <span className="text-lg font-bold text-black">EY</span>
+            <span className="text-lg font-bold text-black">AI</span>
           </div>
           <div>
-            <h1 className="text-lg font-bold text-gray-900 dark:text-white">EY Social Posts</h1>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Building a better working world</p>
+            <h1 className="text-lg font-bold text-gray-900 dark:text-white">socials AI</h1>
+            <p className="text-xs text-gray-500 dark:text-gray-400">AI-powered social media platform</p>
           </div>
         </div>
       </div>
@@ -70,7 +70,7 @@ const Sidebar: React.FC = () => {
               {user?.name}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-              {user?.role} • EY Global
+              {user?.role} • socials AI
             </p>
           </div>
         </div>

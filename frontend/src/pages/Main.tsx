@@ -266,7 +266,7 @@ const Main: React.FC = () => {
                 <span className="text-purple-300 font-medium">AWS Community Builder</span>
               </div>
               <a
-                href="https://www.linkedin.com/in/aadhityaa-sb"
+                href="https://www.linkedin.com/in/aadhi0612/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1 text-blue-400 hover:underline"
@@ -286,7 +286,7 @@ const Main: React.FC = () => {
                 <span className="text-green-300 font-medium">AWS Hero</span>
               </div>
               <a
-                href="https://www.linkedin.com/in/ayyanar-jeyakrishnan"
+                href="https://www.linkedin.com/in/jayyanar/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1 text-blue-400 hover:underline"
@@ -299,8 +299,8 @@ const Main: React.FC = () => {
           <div className="mt-8 flex flex-col items-center">
             <div className="flex items-center gap-2">
               <FaEnvelope className="text-blue-400 text-xl" />
-              <a href="mailto:aadhityaa.ai@gmail.com" className="text-blue-400 hover:underline text-lg font-semibold">
-                aadhityaa.ai@gmail.com
+              <a href="mailto:info@dataopslabs.com" className="text-blue-400 hover:underline text-lg font-semibold">
+                info@dataopslabs.com
               </a>
             </div>
             <span className="text-gray-400 text-sm mt-2">Official website contact email</span>
@@ -310,7 +310,17 @@ const Main: React.FC = () => {
 
       {/* Footer */}
       <footer className="py-6 bg-gray-800 text-center text-gray-400 border-t border-gray-700">
-        &copy; {new Date().getFullYear()} SocialsAI. All rights reserved.
+        <div className="flex flex-col items-center gap-2">
+          <div>&copy; {new Date().getFullYear()} SocialsAI. All rights reserved.</div>
+          <div className="flex items-center gap-4 text-sm">
+            <span className="flex items-center gap-2">
+              Powered by 
+              <span className="text-orange-400 font-semibold">Amazon Nova</span>
+              and
+              <span className="text-blue-400 font-semibold">DataOps Labs</span>
+            </span>
+          </div>
+        </div>
       </footer>
     </div>
   );

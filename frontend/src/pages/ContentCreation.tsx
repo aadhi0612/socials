@@ -308,7 +308,7 @@ const ContentCreation: React.FC = () => {
               Content Creation
             </h1>
             <p className="text-gray-600 dark:text-gray-400">
-              Create, preview, and schedule your EY social media content.
+              Create, preview, and schedule your social media content.
             </p>
           </div>
           
@@ -347,13 +347,13 @@ const ContentCreation: React.FC = () => {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Describe your EY topic or campaign brief
+                    Describe your topic or campaign brief
                   </label>
                   <div className="flex gap-2">
                     <textarea
                       value={prompt}
                       onChange={(e) => setPrompt(e.target.value)}
-                      placeholder="e.g., digital transformation in financial services, EY's sustainability initiatives, tax technology innovations..."
+                      placeholder="e.g., digital transformation in financial services, sustainability initiatives, tax technology innovations..."
                       className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-yellow-500 focus:border-transparent resize-none"
                     />
                     <Button
@@ -690,7 +690,7 @@ const ContentCreation: React.FC = () => {
                       </div>
                       <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3">
                         <p className="text-sm text-gray-900 dark:text-white mb-2">
-                          {generatedContent || 'Your EY content will appear here...'}
+                          {generatedContent || 'Your content will appear here...'}
                         </p>
                         <div className="flex flex-wrap gap-2">
                           {previewUrls.map((url, idx) => (
@@ -721,7 +721,7 @@ const ContentCreation: React.FC = () => {
                 <div className="space-y-3">
                   <Button variant="outline" size="sm" className="w-full justify-start">
                     <Sparkles className="w-4 h-4 mr-2" />
-                    Add EY hashtags
+                    Add hashtags
                   </Button>
                   <Button variant="outline" size="sm" className="w-full justify-start">
                     <MessageSquare className="w-4 h-4 mr-2" />
@@ -729,17 +729,17 @@ const ContentCreation: React.FC = () => {
                   </Button>
                   <Button variant="outline" size="sm" className="w-full justify-start">
                     <Wand2 className="w-4 h-4 mr-2" />
-                    Adjust for EY tone
+                    Adjust tone
                   </Button>
                   <Button variant="outline" size="sm" className="w-full justify-start">
                     <ImageIcon className="w-4 h-4 mr-2" />
-                    Suggest EY visuals
+                    Suggest visuals
                   </Button>
                 </div>
                 
                 <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
                   <p className="text-sm text-yellow-800 dark:text-yellow-300">
-                    💡 EY Tip: Posts with client success stories get 35% more engagement
+                    💡 Tip: Posts with client success stories get 35% more engagement
                   </p>
                 </div>
               </Card>
