@@ -15,7 +15,7 @@ const Sidebar: React.FC = () => {
   const { user, logout } = useAuth();
 
   const navItems = [
-    { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
+    { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/create', icon: PenTool, label: 'Content Creation' },
     { path: '/media', icon: Image, label: 'Media Library' },
     { path: '/campaigns', icon: Target, label: 'Campaign Manager' },
@@ -61,9 +61,9 @@ const Sidebar: React.FC = () => {
       <div className="p-4 border-t border-gray-200 dark:border-gray-700">
         <div className="flex items-center space-x-3 mb-4">
           <img
-            src={user?.avatar || 'https://images.pexels.com/photos/3783725/pexels-photo-3783725.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2'}
+            src={user?.profile_pic_url || '/default-user-icon.png'}
             alt={user?.name}
-            className="w-10 h-10 rounded-full"
+            className="w-10 h-10 rounded-full object-cover"
           />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-900 dark:text-white truncate">

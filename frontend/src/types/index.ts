@@ -5,6 +5,7 @@ export interface User {
   role: 'Admin' | 'Editor' | 'Viewer';
   avatar?: string;
   lastActive?: Date;
+  profile_pic_url?: string;
 }
 
 export interface SocialPost {
@@ -23,7 +24,7 @@ export interface SocialPost {
 
 export interface Platform {
   id: string;
-  name: 'LinkedIn' | 'Instagram' | 'Twitter' | 'Facebook' | 'TikTok';
+  name: 'LinkedIn' | 'Instagram' | 'Twitter' | 'Facebook' ;
   connected: boolean;
   followers: number;
   icon: string;

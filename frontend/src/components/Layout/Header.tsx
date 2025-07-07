@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bell, Search, Sun, Moon, X } from 'lucide-react';
+import { Bell, Search, Sun, Moon, X, Home } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -44,15 +44,6 @@ const Header: React.FC = () => {
   return (
     <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4 relative">
       <div className="flex items-center justify-between">
-        {/* SocialsAI Logo - Clickable */}
-        <div className="flex items-center">
-          <button
-            onClick={() => navigate('/')}
-            className="text-2xl font-bold text-yellow-600 dark:text-yellow-400 hover:text-yellow-700 dark:hover:text-yellow-300 transition-colors cursor-pointer"
-          >
-            SocialsAI
-          </button>
-        </div>
 
         {/* Search */}
         <div className="flex-1 max-w-md mx-6">
@@ -68,6 +59,14 @@ const Header: React.FC = () => {
 
         {/* Actions */}
         <div className="flex items-center space-x-4">
+          {/* Home Button */}
+          <button
+            onClick={() => navigate('/')}
+            className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+            title="Home"
+          >
+            <Home className="w-5 h-5" />
+          </button>
           {/* Notifications */}
           <div className="relative">
             <button 

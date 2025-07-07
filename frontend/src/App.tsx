@@ -17,6 +17,19 @@ import { Link } from 'react-router-dom';
 
 const AppContent: React.FC = () => {
   const { isAuthenticated } = useAuth();
+  const location = useLocation();
+
+  // Always show public layout for landing page
+  if (location.pathname === '/') {
+    return (
+      <Routes>
+        <Route path="/" element={<Main />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    );
+  }
 
   if (!isAuthenticated) {
     return (
@@ -29,7 +42,7 @@ const AppContent: React.FC = () => {
     );
   }
 
-  // For all authenticated routes, show dashboard layout
+  // For all authenticated routes except '/', show dashboard layout
   return (
     <div className="min-h-screen flex bg-gray-100 dark:bg-gray-900">
       <Sidebar />
@@ -37,7 +50,6 @@ const AppContent: React.FC = () => {
         <Header />
         <main className="flex-1 overflow-x-hidden overflow-y-auto p-6">
           <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/create" element={<ContentCreation />} />
             <Route path="/media" element={<MediaLibrary />} />
