@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Bell, Search, Sun, Moon, X } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useNavigate } from 'react-router-dom';
 
 const Header: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
+  const navigate = useNavigate();
   const [showNotifications, setShowNotifications] = useState(false);
 
   const notifications = [
@@ -42,8 +44,18 @@ const Header: React.FC = () => {
   return (
     <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4 relative">
       <div className="flex items-center justify-between">
+        {/* SocialsAI Logo - Clickable */}
+        <div className="flex items-center">
+          <button
+            onClick={() => navigate('/')}
+            className="text-2xl font-bold text-yellow-600 dark:text-yellow-400 hover:text-yellow-700 dark:hover:text-yellow-300 transition-colors cursor-pointer"
+          >
+            SocialsAI
+          </button>
+        </div>
+
         {/* Search */}
-        <div className="flex-1 max-w-md">
+        <div className="flex-1 max-w-md mx-6">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input

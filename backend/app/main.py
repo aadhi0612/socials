@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from app.api import user, content, ai
+from app.api import user, content, ai, community
 
 # Load environment variables
 load_dotenv()
@@ -41,6 +41,7 @@ async def options_handler(request: Request, path: str):
 app.include_router(user.router, prefix="/users", tags=["users"])
 app.include_router(content.router)
 app.include_router(ai.router)
+app.include_router(community.router, prefix="/community", tags=["community"])
 
 @app.get("/")
 def read_root():
