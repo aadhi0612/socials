@@ -25,4 +25,7 @@ class ContentOut(ContentBase):
     id: str
     author_id: str
     created_at: datetime
-    updated_at: datetime 
+    updated_at: datetime
+
+class ContentCreateNoAuthor(ContentBase):
+    pass 

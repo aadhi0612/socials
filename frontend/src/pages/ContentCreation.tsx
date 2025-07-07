@@ -22,7 +22,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { v4 as uuidv4 } from 'uuid';
 
 const ContentCreation: React.FC = () => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const [prompt, setPrompt] = useState('');
   const [generatedContent, setGeneratedContent] = useState('');
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(['1']);
@@ -45,6 +45,14 @@ const ContentCreation: React.FC = () => {
   const [aiImageError, setAiImageError] = useState<string | null>(null);
   
   const bucket = import.meta.env.VITE_AWS_S3_BUCKET as string;
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!user) {
+    return <div>You must be logged in to create content.</div>;
+  }
 
   // Preview handler (UI only)
   const handlePreview = () => {
@@ -77,7 +85,6 @@ const ContentCreation: React.FC = () => {
         await createContent({
           title: prompt,
           body: generatedContent,
-          author_id: user.user_id,
           platforms: selectedPlatformNames,
           scheduled_for,
           status: 'scheduled',
@@ -109,7 +116,6 @@ const ContentCreation: React.FC = () => {
         await createContent({
           title: prompt,
           body: generatedContent,
-          author_id: user.user_id,
           platforms: selectedPlatformNames,
           scheduled_for: undefined,
           status: 'published',

@@ -10,6 +10,7 @@ import boto3
 import os
 from uuid import uuid4
 from urllib.parse import quote_plus
+from fastapi.security import OAuth2PasswordBearer
 
 router = APIRouter(tags=["users"])
 
@@ -122,3 +123,19 @@ async def get_profile_pic_upload_url(request: Request):
         ExpiresIn=600,
     )
     return {"url": url, "key": key, "user_id": user_id}
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="users/login")
+
+def get_current_user_jwt(token: str = Depends(oauth2_scheme)):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("user_id")
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="Invalid token: no user_id")
+        # Optionally, fetch user from DB here
+        return {"user_id": user_id, "role": payload.get("role")}
+    except jwt.PyJWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+        )

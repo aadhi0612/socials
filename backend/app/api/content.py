@@ -1,16 +1,22 @@
 from fastapi import APIRouter, HTTPException, Body, Depends, Request
 from typing import List, Optional
-from app.schemas.content import ContentCreate, ContentUpdate, ContentOut
+from app.schemas.content import ContentCreate, ContentUpdate, ContentOut, ContentCreateNoAuthor
 from app.services.dynamodb_content_service import create_content, get_content, list_content, update_content, delete_content
 import boto3
 import os
 from dotenv import load_dotenv
+from app.api.user import get_current_user_jwt
 
 router = APIRouter(prefix="/content", tags=["content"])
 
 @router.post("/", response_model=ContentOut)
-def create_content_endpoint(content: ContentCreate):
-    return create_content(content)
+def create_content_endpoint(
+    content: ContentCreateNoAuthor,
+    current_user=Depends(get_current_user_jwt)
+):
+    content_data = content.dict()
+    content_data['author_id'] = current_user["user_id"]
+    return create_content(ContentCreate(**content_data))
 
 @router.get("/", response_model=List[ContentOut])
 def list_content_endpoint(author_id: Optional[str] = None):

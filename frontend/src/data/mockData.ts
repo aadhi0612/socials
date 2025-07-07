@@ -5,7 +5,6 @@ export const mockPlatforms: Platform[] = [
   { id: '2', name: 'Twitter', connected: true, followers: 85000, icon: 'twitter' },
   { id: '3', name: 'Instagram', connected: true, followers: 62000, icon: 'instagram' },
   { id: '4', name: 'Facebook', connected: false, followers: 0, icon: 'facebook' },
-  { id: '5', name: 'TikTok', connected: false, followers: 0, icon: 'music' }
 ];
 
 export const mockPosts: SocialPost[] = [
@@ -159,7 +158,7 @@ export const mockCampaigns: Campaign[] = [
     goals: [
       { type: 'reach', target: 200000, current: 128000 },
       { type: 'engagement', target: 12000, current: 8500 },
-      { type: 'conversions', target: 2000, target: 1250 }
+      { type: 'conversions', target: 2000, current: 1250 }
     ],
     posts: ['2'],
     assets: ['m1'],

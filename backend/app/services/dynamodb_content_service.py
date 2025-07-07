@@ -5,6 +5,7 @@ from typing import Optional, List
 from app.schemas.content import ContentCreate, ContentUpdate, ContentOut
 from datetime import datetime
 import uuid
+from boto3.dynamodb.conditions import Attr
 
 load_dotenv()
 
@@ -41,7 +42,9 @@ def get_content(content_id: str) -> Optional[ContentOut]:
 
 def list_content(author_id: Optional[str] = None) -> List[ContentOut]:
     if author_id:
-        response = table.scan(FilterExpression='author_id = :aid', ExpressionAttributeValues={':aid': author_id})
+        response = table.scan(
+            FilterExpression=Attr('author_id').eq(author_id)
+        )
     else:
         response = table.scan()
     items = response.get('Items', [])

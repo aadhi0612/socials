@@ -90,7 +90,6 @@ export type Theme = 'light' | 'dark';
 export interface ContentCreate {
   title: string;
   body: string;
-  author_id: string;
   media?: string[];
   status?: string;
   platforms?: string[];

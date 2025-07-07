@@ -20,8 +20,10 @@ import { mockPosts, mockPlatforms } from '../data/mockData';
 import { format } from 'date-fns';
 import { listContent } from '../api/content';
 import { ContentOut } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 
 const Dashboard: React.FC = () => {
+  const { user } = useAuth();
   const [aiMode, setAiMode] = useState(false);
   const [content, setContent] = useState<ContentOut[]>([]);
   const [loadingContent, setLoadingContent] = useState(true);
@@ -32,12 +34,13 @@ const Dashboard: React.FC = () => {
   const totalFollowers = mockPlatforms.filter(p => p.connected).reduce((sum, p) => sum + p.followers, 0);
 
   React.useEffect(() => {
+    if (!user?.user_id) return;
     setLoadingContent(true);
-    listContent()
+    listContent(user.user_id)
       .then(setContent)
       .catch(err => setContentError(err.message || 'Failed to load content'))
       .finally(() => setLoadingContent(false));
-  }, []);
+  }, [user?.user_id]);
 
   const recentPosts = content.slice(0, 3);
   const scheduledPosts = mockPosts.filter(post => post.status === 'scheduled');
