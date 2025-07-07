@@ -20,6 +20,7 @@ import { mockPlatforms } from '../data/mockData';
 import { createContent } from '../api/content';
 import { useAuth } from '../contexts/AuthContext';
 import { v4 as uuidv4 } from 'uuid';
+import { useNavigate } from 'react-router-dom';
 
 const ContentCreation: React.FC = () => {
   const { user, loading } = useAuth();
@@ -39,12 +40,12 @@ const ContentCreation: React.FC = () => {
   const [postId, setPostId] = useState<string>(uuidv4());
   const [showAIImageGen, setShowAIImageGen] = useState(false);
   const [aiImagePrompt, setAiImagePrompt] = useState('');
-  const [aiImage, setAiImage] = useState<string | null>(null);
-  const [aiImageS3Url, setAiImageS3Url] = useState<string | null>(null);
+  const [aiImages, setAiImages] = useState<string[]>([]);
   const [aiImageLoading, setAiImageLoading] = useState(false);
   const [aiImageError, setAiImageError] = useState<string | null>(null);
   
   const bucket = import.meta.env.VITE_AWS_S3_BUCKET as string;
+  const navigate = useNavigate();
 
   if (loading) {
     return <div>Loading...</div>;
@@ -93,6 +94,9 @@ const ContentCreation: React.FC = () => {
         setSuccess(true);
         setSuccessType('scheduled');
         setError(null);
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 5000);
       } catch (err: any) {
         setError(err.message || 'Failed to schedule content');
       }
@@ -124,6 +128,9 @@ const ContentCreation: React.FC = () => {
         setSuccess(true);
         setSuccessType('published');
         setError(null);
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 5000);
       } catch (err: any) {
         setError(err.message || 'Failed to publish content');
       }
@@ -176,8 +183,6 @@ const ContentCreation: React.FC = () => {
     
     setAiImageLoading(true);
     setAiImageError(null);
-    setAiImage(null);
-    setAiImageS3Url(null);
     
     try {
       const res = await fetch('http://localhost:8000/ai/generate-image', {
@@ -191,12 +196,9 @@ const ContentCreation: React.FC = () => {
       }
       
       const data = await res.json();
-      // Prefer s3_url, fallback to image_url
-      setAiImage(data.s3_url || data.image_url || null);
-      setAiImageS3Url(data.s3_url || null);
-      
-      if (!data.s3_url && !data.image_url) {
-        throw new Error('No image URL returned from AI service');
+      const newImage = data.s3_url || data.image_url || null;
+      if (newImage) {
+        setAiImages(prev => [...prev, newImage]);
       }
     } catch (err: any) {
       setAiImageError(err.message || 'AI image generation failed');
@@ -206,8 +208,7 @@ const ContentCreation: React.FC = () => {
   };
 
   const handleRemoveAIImage = () => {
-    setAiImage(null);
-    setAiImageS3Url(null);
+    setAiImages([]);
     setAiImagePrompt('');
     setAiImageError(null);
   };
@@ -216,10 +217,9 @@ const ContentCreation: React.FC = () => {
     setShowAIImageGen(false);
     setAiImagePrompt('');
     setAiImageError(null);
-    if (!aiImage) {
-      // Only reset if no image was generated
-      setAiImage(null);
-      setAiImageS3Url(null);
+    if (aiImages.length === 0) {
+      // Only reset if no images were generated
+      setAiImages([]);
     }
   };
 
@@ -247,31 +247,32 @@ const ContentCreation: React.FC = () => {
       s3Urls.push(s3Url);
     }
     
-    // AI-generated image (if present and not already in S3)
-    if (aiImage && !aiImageS3Url) {
-      // Fetch image as blob
-      const response = await fetch(aiImage);
-      const blob = await response.blob();
-      const res = await fetch('http://localhost:8000/content/media/presign-upload', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          post_id: postId,
-          filename: 'ai-image.png',
-          filetype: blob.type
-        })
-      });
-      const { url, s3_key } = await res.json();
-      await fetch(url, {
-        method: 'PUT',
-        headers: { 'Content-Type': blob.type },
-        body: blob
-      });
-      const s3Url = `https://${bucket}.s3.amazonaws.com/${s3_key}`;
-      s3Urls.push(s3Url);
-      setAiImageS3Url(s3Url);
-    } else if (aiImageS3Url) {
-      s3Urls.push(aiImageS3Url);
+    // AI-generated images
+    for (const img of aiImages) {
+      if (img.startsWith('http')) {
+        // Already an S3 URL, just add it
+        s3Urls.push(img);
+      } else if (img.startsWith('data:')) {
+        // It's a data URL, upload to S3
+        const blob = await (await fetch(img)).blob();
+        const res = await fetch('http://localhost:8000/content/media/presign-upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            post_id: postId,
+            filename: `ai-image-${Date.now()}.png`,
+            filetype: blob.type
+          })
+        });
+        const { url, s3_key } = await res.json();
+        await fetch(url, {
+          method: 'PUT',
+          headers: { 'Content-Type': blob.type },
+          body: blob
+        });
+        const s3Url = `https://${bucket}.s3.amazonaws.com/${s3_key}`;
+        s3Urls.push(s3Url);
+      }
     }
     
     return s3Urls;
@@ -299,10 +300,10 @@ const ContentCreation: React.FC = () => {
   };
 
   useEffect(() => {
-    if (aiImage) {
-      console.log("AI Image URL:", aiImage);
+    if (aiImages.length > 0) {
+      console.log("AI Images:", aiImages);
     }
-  }, [aiImage]);
+  }, [aiImages]);
 
   return (
     <div className="min-h-screen flex bg-gray-900">
@@ -335,8 +336,11 @@ const ContentCreation: React.FC = () => {
         )}
         
         {success && (
-          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-            <p className="text-sm text-green-800 dark:text-green-300">
+          <div className="fixed top-8 left-1/2 transform -translate-x-1/2 z-50 bg-gray-900 border-2 border-yellow-400 text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-3 transition-all">
+            <svg className="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+            <p className="text-base font-semibold">
               {successType === 'scheduled' ? 'Content scheduled successfully!' : 'Content published successfully!'}
             </p>
           </div>
@@ -551,31 +555,17 @@ const ContentCreation: React.FC = () => {
                   </div>
                 ))}
 
-                {/* Show AI generated image */}
-                {aiImage && (
-                  <div
-                    className="relative border rounded bg-gray-50 flex items-center justify-center"
-                    style={{ height: 120, width: 160 }}
-                  >
-                    <img
-                      src={aiImage}
-                      alt="AI generated"
-                      onError={() => setAiImageError('Failed to load generated image')}
-                      style={{ height: '100%', width: '100%', objectFit: 'cover', borderRadius: 8 }}
-                    />
+                {/* Show AI generated images */}
+                {aiImages.map((img, idx) => (
+                  <div key={idx} className="relative inline-block mr-2 mb-2">
+                    <img src={img} alt={`AI generated ${idx + 1}`} className="w-24 h-24 object-cover rounded" />
                     <button
-                      className="absolute top-1 right-1 bg-white rounded-full p-1 shadow hover:bg-red-100"
-                      onClick={handleRemoveAIImage}
-                      type="button"
+                      onClick={() => setAiImages(aiImages.filter((_, i) => i !== idx))}
+                      className="absolute top-1 right-1 bg-white rounded-full p-1 shadow"
                       aria-label="Remove AI image"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                    <div className="absolute bottom-1 left-1 bg-purple-600 text-white text-xs px-2 py-1 rounded">
-                      AI
-                    </div>
+                    >×</button>
                   </div>
-                )}
+                ))}
               </div>
             </Card>
 
@@ -702,14 +692,16 @@ const ContentCreation: React.FC = () => {
                           {previewUrls.map((url, idx) => (
                             <img key={idx} src={url} alt={`preview-media-${idx}`} style={{ height: 80, width: 100, objectFit: 'cover', borderRadius: 6 }} />
                           ))}
-                          {aiImage && (
-                            <div className="relative">
-                              <img src={aiImage} alt="AI generated preview" style={{ height: 80, width: 100, objectFit: 'cover', borderRadius: 6 }} />
-                              <div className="absolute bottom-1 left-1 bg-purple-600 text-white text-xs px-1 py-0.5 rounded">
-                                AI
-                              </div>
+                          {aiImages.map((img, idx) => (
+                            <div key={idx} className="relative">
+                              <img src={img} alt={`AI generated ${idx + 1}`} style={{ height: 80, width: 100, objectFit: 'cover', borderRadius: 6 }} />
+                              <button
+                                onClick={() => setAiImages(aiImages.filter((_, i) => i !== idx))}
+                                className="absolute top-1 right-1 bg-white rounded-full p-1 shadow hover:bg-red-100"
+                                aria-label="Remove AI image"
+                              >×</button>
                             </div>
-                          )}
+                          ))}
                         </div>
                       </div>
                     </div>
