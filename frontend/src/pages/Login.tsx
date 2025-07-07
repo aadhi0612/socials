@@ -34,7 +34,7 @@ const Login: React.FC = () => {
     try {
       await login(form.email, form.password);
       console.log('login() from AuthContext completed');
-      navigate('/');
+      navigate('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Login failed');
     } finally {
