@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, Body
+from fastapi import APIRouter, Depends, HTTPException, Request, Body, status
 from app.schemas.user import UserOut, UserUpdate, UserListOut, UserCreate
 from app.services.dynamodb_service import get_user_by_id, list_users, update_user, get_user_item_by_id, get_user_item_by_email
 import bcrypt

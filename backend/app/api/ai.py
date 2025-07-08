@@ -69,6 +69,12 @@ def generate_image(request: ImagePromptRequest):
         aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
         region_name=os.getenv("AWS_BEDROCK_REGION"),
     )
+    def get_short_name(prompt, max_words=6, max_length=30):
+        clean = ''.join(c if c.isalnum() or c.isspace() else '' for c in prompt)
+        words = ' '.join(clean.split()[:max_words])
+        if len(words) > max_length:
+            words = words[:max_length].strip()
+        return words or 'ai_image'
     try:
         # Use the correct request format for Nova Canvas
         native_request = {
@@ -107,7 +113,9 @@ def generate_image(request: ImagePromptRequest):
         image_url = f"data:image/png;base64,{base64_image}" if base64_image else ""
         print("Returning image_url:", image_url)
         
-        return {"image_url": image_url}
+        # Generate a short name from the prompt
+        name = get_short_name(request.prompt)
+        return {"image_url": image_url, "name": name}
         
     except Exception as e:
         print(f"Error: {e}")

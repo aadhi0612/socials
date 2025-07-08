@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Search, 
   Filter, 
@@ -16,23 +16,57 @@ import {
 import Card from '../components/UI/Card';
 import Button from '../components/UI/Button';
 import Badge from '../components/UI/Badge';
-import { mockMediaAssets } from '../data/mockData';
+import { fetchMedia, addMedia, deleteMedia, getPresignedUploadUrl, generateAIImage, updateMedia } from '../api/media';
+import { MediaOut } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 import { format } from 'date-fns';
+import { v4 as uuidv4 } from 'uuid';
+
+// Patch MediaOut type locally to include tags for UI state
+// (Remove this if/when backend supports tags)
+type MediaOutWithTags = MediaOut & { tags?: string[] };
 
 const MediaLibrary: React.FC = () => {
+  const { token } = useAuth();
+  const [media, setMedia] = useState<MediaOutWithTags[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'image' | 'video'>('all');
   const [selectedAsset, setSelectedAsset] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [aiModalOpen, setAiModalOpen] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [sessionId] = useState(() => uuidv4());
+  const bucket = import.meta.env.VITE_AWS_S3_BUCKET as string;
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [renameModalOpen, setRenameModalOpen] = useState(false);
+  const [renameValue, setRenameValue] = useState('');
+  const [renamingAsset, setRenamingAsset] = useState<MediaOut | null>(null);
+  const [renameError, setRenameError] = useState<string | null>(null);
+  const [tagInput, setTagInput] = useState('');
 
-  const filteredAssets = mockMediaAssets.filter(asset => {
-    const matchesSearch = asset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         asset.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+  useEffect(() => {
+    if (!token) return;
+    setLoading(true);
+    fetchMedia(token)
+      .then(setMedia)
+      .catch(err => setError(err.message || 'Failed to load media'))
+      .finally(() => setLoading(false));
+  }, [token]);
+
+  const filteredAssets = media.filter(asset => {
+    const matchesSearch = (asset.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (asset.tags || []).some((tag: string) => tag.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesFilter = selectedFilter === 'all' || asset.type === selectedFilter;
     return matchesSearch && matchesFilter;
   });
 
-  const selectedAssetData = selectedAsset ? mockMediaAssets.find(a => a.id === selectedAsset) : null;
+  const selectedAssetData = selectedAsset ? media.find(a => a.id === selectedAsset) : null;
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
@@ -40,6 +74,128 @@ const MediaLibrary: React.FC = () => {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  // Upload Media Handler
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !token) return;
+    setUploading(true);
+    setUploadError(null);
+    try {
+      const { url, s3_key } = await getPresignedUploadUrl(sessionId, file.name, file.type);
+      await fetch(url, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type },
+        body: file
+      });
+      const s3Url = `https://${bucket}.s3.amazonaws.com/${s3_key}`;
+      const newMedia = await addMedia({ url: s3Url, type: file.type.startsWith('image') ? 'image' : 'video', name: file.name }, token);
+      setMedia([newMedia, ...media]);
+    } catch (err: any) {
+      setUploadError(err.message || 'Upload failed');
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  // AI Generate Handler
+  const handleAIGenerate = async () => {
+    if (!aiPrompt.trim() || !token) return;
+    setAiLoading(true);
+    setAiError(null);
+    try {
+      const data = await generateAIImage(aiPrompt);
+      const aiImg = data.image_url || data.s3_url;
+      const aiName = data.name || 'AI Image';
+      if (!aiImg) {
+        setAiError('AI did not return an image.');
+        setAiLoading(false);
+        return;
+      }
+      let s3Url = aiImg;
+      if (aiImg.startsWith('data:')) {
+        // Upload to S3
+        const blob = await (await fetch(aiImg)).blob();
+        const { url, s3_key } = await getPresignedUploadUrl(sessionId, `ai-image-${Date.now()}.png`, blob.type);
+        await fetch(url, {
+          method: 'PUT',
+          headers: { 'Content-Type': blob.type },
+          body: blob
+        });
+        s3Url = `https://${bucket}.s3.amazonaws.com/${s3_key}`;
+      }
+      const newMedia = await addMedia({ url: s3Url, type: 'image', name: aiName, ai_generated: true }, token);
+      setMedia([newMedia, ...media]);
+      setAiModalOpen(false);
+      setAiPrompt('');
+    } catch (err: any) {
+      setAiError(err.message || 'AI generation failed');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  // Add a helper for downloading files
+  const downloadFile = async (url: string, name: string) => {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Failed to fetch file');
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1000);
+    } catch (err) {
+      alert('Failed to download file');
+    }
+  };
+
+  // Handler for opening rename modal
+  const handleEditClick = (asset: MediaOut) => {
+    setRenamingAsset(asset);
+    setRenameValue(asset.name || '');
+    setRenameModalOpen(true);
+    setRenameError(null);
+  };
+
+  // Handler for renaming asset (frontend only, unless backend supports update)
+  const handleRename = async () => {
+    if (!renamingAsset || !renameValue.trim()) return;
+    // If backend supports update, call it here. For now, update UI only.
+    setMedia(media.map(m => m.id === renamingAsset.id ? { ...m, name: renameValue } : m));
+    setRenameModalOpen(false);
+  };
+
+  // Add tag to selected asset
+  const handleAddTag = async () => {
+    if (!selectedAssetData || !tagInput.trim() || !selectedAssetData.id) return;
+    const id: string = selectedAssetData.id;
+    const tag = tagInput.trim();
+    const updatedTags = [...((selectedAssetData as MediaOutWithTags).tags || []), tag];
+    setMedia(media.map(m => m.id === id ? { ...m, tags: updatedTags } : m));
+    setTagInput('');
+    if (!token) return;
+    await updateMedia(id, { tags: updatedTags }, token);
+  };
+
+  // Remove tag from selected asset
+  const handleRemoveTag = async (tag: string) => {
+    if (!selectedAssetData || !selectedAssetData.id) return;
+    const id: string = selectedAssetData.id;
+    const updatedTags = ((selectedAssetData as MediaOutWithTags).tags || []).filter((t: string) => t !== tag);
+    setMedia(media.map(m => m.id === id ? { ...m, tags: updatedTags } : m));
+    if (!token) return;
+    await updateMedia(id, { tags: updatedTags }, token);
   };
 
   return (
@@ -56,16 +212,53 @@ const MediaLibrary: React.FC = () => {
         </div>
         
         <div className="flex space-x-3">
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => setAiModalOpen(true)}>
             <Zap className="w-4 h-4 mr-2" />
             AI Generate
           </Button>
-          <Button>
+          <Button onClick={handleUploadClick} loading={uploading}>
             <Upload className="w-4 h-4 mr-2" />
             Upload Media
           </Button>
+          <input
+            type="file"
+            accept="image/*,video/*"
+            ref={fileInputRef}
+            style={{ display: 'none' }}
+            onChange={handleFileChange}
+          />
         </div>
       </div>
+
+      {uploadError && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+          <p className="text-sm text-red-800 dark:text-red-300">{uploadError}</p>
+        </div>
+      )}
+
+      {/* AI Modal */}
+      {aiModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-8 w-full max-w-md relative">
+            <button className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200" onClick={() => setAiModalOpen(false)}>
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+            <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Generate AI Image</h2>
+            <input
+              type="text"
+              className="w-full px-3 py-2 mb-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+              placeholder="Describe the image you want..."
+              value={aiPrompt}
+              onChange={e => setAiPrompt(e.target.value)}
+              disabled={aiLoading}
+            />
+            {aiError && <div className="text-red-500 text-sm mb-2">{aiError}</div>}
+            <Button className="w-full" onClick={handleAIGenerate} loading={aiLoading} disabled={aiLoading || !aiPrompt.trim()}>
+              <Zap className="w-4 h-4 mr-2" /> Generate
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Search and Filters */}
       <Card>
@@ -150,19 +343,16 @@ const MediaLibrary: React.FC = () => {
                     }`}
                   >
                     <div className="aspect-square bg-gray-100 dark:bg-gray-800 relative">
-                      <img
-                        src={asset.url}
-                        alt={asset.name}
-                        className="w-full h-full object-cover"
-                      />
-                      {asset.type === 'video' && (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="w-12 h-12 bg-black/50 rounded-full flex items-center justify-center">
-                            <Play className="w-6 h-6 text-white ml-1" />
-                          </div>
-                        </div>
+                      {asset.type === 'video' ? (
+                        <video src={asset.url} controls className="w-full h-full object-cover" />
+                      ) : (
+                        <img
+                          src={asset.url}
+                          alt={asset.name}
+                          className="w-full h-full object-cover"
+                        />
                       )}
-                      {asset.aiGenerated && (
+                      {asset.ai_generated && (
                         <div className="absolute top-2 right-2">
                           <Badge variant="info" className="text-xs">
                             <Zap className="w-3 h-3 mr-1" />
@@ -174,11 +364,28 @@ const MediaLibrary: React.FC = () => {
                       {/* Hover Overlay */}
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
                         <div className="flex space-x-2">
-                          <Button size="sm" variant="ghost" className="bg-white/90 hover:bg-white text-gray-900">
-                            <Edit3 className="w-4 h-4" />
+                          <Button size="sm" variant="ghost" className="!bg-gray-900/80 hover:!bg-gray-900 text-white shadow-lg rounded-full p-2" onClick={(e) => { e.stopPropagation(); handleEditClick(asset); }}>
+                            <Edit3 className="w-5 h-5" />
                           </Button>
-                          <Button size="sm" variant="ghost" className="bg-white/90 hover:bg-white text-gray-900">
-                            <Download className="w-4 h-4" />
+                          <Button size="sm" variant="ghost" className="!bg-gray-900/80 hover:!bg-gray-900 text-white shadow-lg rounded-full p-2" onClick={(e) => { e.stopPropagation(); downloadFile(asset.url, asset.name || 'media'); }}>
+                            <Download className="w-5 h-5" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="!bg-gray-900/80 hover:!bg-gray-900 text-white shadow-lg rounded-full p-2"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              if (!token) return;
+                              await deleteMedia(asset.id, token);
+                              setMedia(media.filter(m => m.id !== asset.id));
+                              if (selectedAsset === asset.id) setSelectedAsset(null);
+                            }}
+                          >
+                            <span className="sr-only">Delete</span>
+                            <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
                           </Button>
                         </div>
                       </div>
@@ -188,9 +395,13 @@ const MediaLibrary: React.FC = () => {
                       <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                         {asset.name}
                       </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {formatFileSize(asset.size)}
-                      </p>
+                      {(asset.tags && asset.tags.length > 0) && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {asset.tags.map((tag: string) => (
+                            <Badge key={tag} variant="default" className="text-xs">{tag}</Badge>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -206,11 +417,15 @@ const MediaLibrary: React.FC = () => {
                     }`}
                   >
                     <div className="w-16 h-16 rounded-lg overflow-hidden mr-4 flex-shrink-0 bg-gray-100 dark:bg-gray-800">
-                      <img
-                        src={asset.url}
-                        alt={asset.name}
-                        className="w-full h-full object-cover"
-                      />
+                      {asset.type === 'video' ? (
+                        <video src={asset.url} controls className="w-full h-full object-cover" />
+                      ) : (
+                        <img
+                          src={asset.url}
+                          alt={asset.name}
+                          className="w-full h-full object-cover"
+                        />
+                      )}
                     </div>
                     
                     <div className="flex-1 min-w-0">
@@ -218,41 +433,53 @@ const MediaLibrary: React.FC = () => {
                         <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                           {asset.name}
                         </p>
-                        {asset.aiGenerated && (
+                        {asset.ai_generated && (
                           <Badge variant="info" className="text-xs flex-shrink-0">
                             <Zap className="w-3 h-3 mr-1" />
                             AI
                           </Badge>
                         )}
                       </div>
-                      
+                      {(asset.tags && asset.tags.length > 0) && (
+                        <div className="flex flex-wrap gap-1 mb-1">
+                          {asset.tags.map((tag: string) => (
+                            <Badge key={tag} variant="default" className="text-xs">{tag}</Badge>
+                          ))}
+                        </div>
+                      )}
                       <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
-                        <span>{asset.type.toUpperCase()}</span>
-                        <span>{formatFileSize(asset.size)}</span>
-                        <span>{asset.dimensions.width} × {asset.dimensions.height}</span>
-                        <span>{format(asset.createdAt, 'MMM d, yyyy')}</span>
-                      </div>
-                      
-                      <div className="flex items-center space-x-1 mt-2">
-                        {asset.tags.slice(0, 3).map((tag) => (
-                          <Badge key={tag} variant="default" className="text-xs">
-                            {tag}
-                          </Badge>
-                        ))}
-                        {asset.tags.length > 3 && (
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            +{asset.tags.length - 3} more
-                          </span>
-                        )}
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {asset.type.toUpperCase()}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {asset.created_at ? format(new Date(asset.created_at), 'MMM d, yyyy') : ''}
+                        </p>
                       </div>
                     </div>
                     
                     <div className="flex items-center space-x-2 ml-4">
-                      <Button size="sm" variant="ghost">
-                        <Edit3 className="w-4 h-4" />
+                      <Button size="sm" variant="ghost" className="!bg-gray-900/80 hover:!bg-gray-900 text-white shadow-lg rounded-full p-2" onClick={(e) => { e.stopPropagation(); handleEditClick(asset); }}>
+                        <Edit3 className="w-5 h-5" />
                       </Button>
-                      <Button size="sm" variant="ghost">
-                        <Download className="w-4 h-4" />
+                      <Button size="sm" variant="ghost" className="!bg-gray-900/80 hover:!bg-gray-900 text-white shadow-lg rounded-full p-2" onClick={(e) => { e.stopPropagation(); downloadFile(asset.url, asset.name || 'media'); }}>
+                        <Download className="w-5 h-5" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="!bg-gray-900/80 hover:!bg-gray-900 text-white shadow-lg rounded-full p-2"
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          if (!token) return;
+                          await deleteMedia(asset.id, token);
+                          setMedia(media.filter(m => m.id !== asset.id));
+                          if (selectedAsset === asset.id) setSelectedAsset(null);
+                        }}
+                      >
+                        <span className="sr-only">Delete</span>
+                        <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
                       </Button>
                     </div>
                   </div>
@@ -291,41 +518,12 @@ const MediaLibrary: React.FC = () => {
                   
                   <div>
                     <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Dimensions
-                    </label>
-                    <p className="text-sm text-gray-900 dark:text-white">
-                      {selectedAssetData.dimensions.width} × {selectedAssetData.dimensions.height}
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      File Size
-                    </label>
-                    <p className="text-sm text-gray-900 dark:text-white">
-                      {formatFileSize(selectedAssetData.size)}
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                       Created
                     </label>
                     <p className="text-sm text-gray-900 dark:text-white">
-                      {format(selectedAssetData.createdAt, 'MMM d, yyyy h:mm a')}
+                      {selectedAssetData.created_at ? format(new Date(selectedAssetData.created_at), 'MMM d, yyyy h:mm a') : ''}
                     </p>
                   </div>
-                  
-                  {selectedAssetData.campaign && (
-                    <div>
-                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Campaign
-                      </label>
-                      <p className="text-sm text-gray-900 dark:text-white">
-                        {selectedAssetData.campaign}
-                      </p>
-                    </div>
-                  )}
                 </div>
               </Card>
               
@@ -333,41 +531,28 @@ const MediaLibrary: React.FC = () => {
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                   Tags
                 </h3>
-                <div className="flex flex-wrap gap-2">
-                  {selectedAssetData.tags.map((tag) => (
-                    <Badge key={tag} variant="default">
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {(selectedAssetData as MediaOutWithTags).tags?.map((tag: string) => (
+                    <Badge key={tag} variant="default" className="flex items-center">
                       <Tag className="w-3 h-3 mr-1" />
                       {tag}
+                      <button className="ml-1 text-xs text-red-500 hover:text-red-700" onClick={() => handleRemoveTag(tag)}>&times;</button>
                     </Badge>
                   ))}
                 </div>
-                
-                <div className="mt-4">
+                <div>
                   <input
                     type="text"
+                    value={tagInput}
+                    onChange={e => setTagInput(e.target.value)}
                     placeholder="Add new tag..."
-                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
                   />
-                </div>
-              </Card>
-              
-              <Card>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  Actions
-                </h3>
-                <div className="space-y-3">
-                  <Button className="w-full justify-start" variant="outline">
-                    <Download className="w-4 h-4 mr-2" />
-                    Download Original
-                  </Button>
-                  <Button className="w-full justify-start" variant="outline">
-                    <Edit3 className="w-4 h-4 mr-2" />
-                    Edit & Resize
-                  </Button>
-                  <Button className="w-full justify-start" variant="outline">
-                    <FileImage className="w-4 h-4 mr-2" />
-                    Create Variants
-                  </Button>
+                  <div className="flex justify-end mt-2">
+                    <Button size="sm" onClick={handleAddTag} disabled={!tagInput.trim()}>
+                      Add
+                    </Button>
+                  </div>
                 </div>
               </Card>
             </>
@@ -386,6 +571,28 @@ const MediaLibrary: React.FC = () => {
           )}
         </div>
       </div>
+
+      {renameModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-8 w-full max-w-md relative">
+            <button className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200" onClick={() => setRenameModalOpen(false)}>
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+            <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Rename Asset</h2>
+            <input
+              type="text"
+              className="w-full px-3 py-2 mb-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+              value={renameValue}
+              onChange={e => setRenameValue(e.target.value)}
+              disabled={false}
+            />
+            {renameError && <div className="text-red-500 text-sm mb-2">{renameError}</div>}
+            <Button className="w-full" onClick={handleRename} disabled={!renameValue.trim()}>
+              Save
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

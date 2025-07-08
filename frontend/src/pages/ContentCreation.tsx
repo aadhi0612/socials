@@ -11,7 +11,8 @@ import {
   Clock,
   Send,
   RefreshCw,
-  X
+  X,
+  Grid
 } from 'lucide-react';
 import Card from '../components/UI/Card';
 import Button from '../components/UI/Button';
@@ -21,31 +22,27 @@ import { createContent } from '../api/content';
 import { useAuth } from '../contexts/AuthContext';
 import { v4 as uuidv4 } from 'uuid';
 import { useNavigate } from 'react-router-dom';
+import { MediaOut } from '../types';
+import MediaSelectModal from '../components/UI/MediaSelectModal';
 
 const ContentCreation: React.FC = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, token } = useAuth();
   const [prompt, setPrompt] = useState('');
   const [generatedContent, setGeneratedContent] = useState('');
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(['1']);
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
-  const [showAIAssistant, setShowAIAssistant] = useState(false);
+  const [selectedMedia, setSelectedMedia] = useState<MediaOut[]>([]);
+  const [showMediaModal, setShowMediaModal] = useState(false);
   const [scheduledDate, setScheduledDate] = useState('');
   const [scheduledTime, setScheduledTime] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [successType, setSuccessType] = useState<'published' | 'scheduled' | null>(null);
-  const [mediaUrls, setMediaUrls] = useState<string[]>([]);
   const [postId, setPostId] = useState<string>(uuidv4());
-  const [showAIImageGen, setShowAIImageGen] = useState(false);
-  const [aiImagePrompt, setAiImagePrompt] = useState('');
-  const [aiImages, setAiImages] = useState<string[]>([]);
-  const [aiImageLoading, setAiImageLoading] = useState(false);
-  const [aiImageError, setAiImageError] = useState<string | null>(null);
-  
   const bucket = import.meta.env.VITE_AWS_S3_BUCKET as string;
   const navigate = useNavigate();
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
 
   if (loading) {
     return <div>Loading...</div>;
@@ -82,7 +79,9 @@ const ContentCreation: React.FC = () => {
         .map(p => p.name);
       const scheduled_for = new Date(`${scheduledDate}T${scheduledTime}`).toISOString();
       try {
-        const media = await uploadImagesToS3();
+        const uploadedMedia = await uploadImagesToS3();
+        const libraryMedia = selectedMedia.map(m => m.url);
+        const media = [...uploadedMedia, ...libraryMedia];
         await createContent({
           title: prompt,
           body: generatedContent,
@@ -116,7 +115,9 @@ const ContentCreation: React.FC = () => {
         .filter(p => selectedPlatforms.includes(p.id))
         .map(p => p.name);
       try {
-        const media = await uploadImagesToS3();
+        const uploadedMedia = await uploadImagesToS3();
+        const libraryMedia = selectedMedia.map(m => m.url);
+        const media = [...uploadedMedia, ...libraryMedia];
         await createContent({
           title: prompt,
           body: generatedContent,
@@ -167,117 +168,6 @@ const ContentCreation: React.FC = () => {
 
   const connectedPlatforms = mockPlatforms.filter(p => p.connected);
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setSelectedFiles(prev => [...prev, file]);
-    setPreviewUrls(prev => [...prev, URL.createObjectURL(file)]);
-  };
-
-  const handleAIImageGenerate = async () => {
-    console.log('handleAIImageGenerate called, aiImagePrompt:', aiImagePrompt);
-    if (!aiImagePrompt.trim()) {
-      setAiImageError('Please enter a prompt for AI image generation');
-      return;
-    }
-    
-    setAiImageLoading(true);
-    setAiImageError(null);
-    
-    try {
-      const res = await fetch('http://localhost:8000/ai/generate-image', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: aiImagePrompt })
-      });
-      
-      if (!res.ok) {
-        throw new Error('Failed to generate AI image');
-      }
-      
-      const data = await res.json();
-      const newImage = data.s3_url || data.image_url || null;
-      if (newImage) {
-        setAiImages(prev => [...prev, newImage]);
-      }
-    } catch (err: any) {
-      setAiImageError(err.message || 'AI image generation failed');
-    } finally {
-      setAiImageLoading(false);
-    }
-  };
-
-  const handleRemoveAIImage = () => {
-    setAiImages([]);
-    setAiImagePrompt('');
-    setAiImageError(null);
-  };
-
-  const handleCloseAIImageGen = () => {
-    setShowAIImageGen(false);
-    setAiImagePrompt('');
-    setAiImageError(null);
-    if (aiImages.length === 0) {
-      // Only reset if no images were generated
-      setAiImages([]);
-    }
-  };
-
-  const uploadImagesToS3 = async (): Promise<string[]> => {
-    const s3Urls: string[] = [];
-    
-    // User-uploaded images
-    for (const file of selectedFiles) {
-      const res = await fetch('http://localhost:8000/content/media/presign-upload', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          post_id: postId,
-          filename: file.name,
-          filetype: file.type
-        })
-      });
-      const { url, s3_key } = await res.json();
-      await fetch(url, {
-        method: 'PUT',
-        headers: { 'Content-Type': file.type },
-        body: file
-      });
-      const s3Url = `https://${bucket}.s3.amazonaws.com/${s3_key}`;
-      s3Urls.push(s3Url);
-    }
-    
-    // AI-generated images
-    for (const img of aiImages) {
-      if (img.startsWith('http')) {
-        // Already an S3 URL, just add it
-        s3Urls.push(img);
-      } else if (img.startsWith('data:')) {
-        // It's a data URL, upload to S3
-        const blob = await (await fetch(img)).blob();
-        const res = await fetch('http://localhost:8000/content/media/presign-upload', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            post_id: postId,
-            filename: `ai-image-${Date.now()}.png`,
-            filetype: blob.type
-          })
-        });
-        const { url, s3_key } = await res.json();
-        await fetch(url, {
-          method: 'PUT',
-          headers: { 'Content-Type': blob.type },
-          body: blob
-        });
-        const s3Url = `https://${bucket}.s3.amazonaws.com/${s3_key}`;
-        s3Urls.push(s3Url);
-      }
-    }
-    
-    return s3Urls;
-  };
-
   const handleAIGenerate = async () => {
     if (!prompt.trim()) return;
     setIsGenerating(true);
@@ -299,11 +189,36 @@ const ContentCreation: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    if (aiImages.length > 0) {
-      console.log("AI Images:", aiImages);
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setSelectedFiles(prev => [...prev, file]);
+    setPreviewUrls(prev => [...prev, URL.createObjectURL(file)]);
+  };
+
+  const uploadImagesToS3 = async (): Promise<string[]> => {
+    const s3Urls: string[] = [];
+    for (const file of selectedFiles) {
+      const res = await fetch('http://localhost:8000/content/media/presign-upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          post_id: postId,
+          filename: file.name,
+          filetype: file.type
+        })
+      });
+      const { url, s3_key } = await res.json();
+      await fetch(url, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type },
+        body: file
+      });
+      const s3Url = `https://${bucket}.s3.amazonaws.com/${s3_key}`;
+      s3Urls.push(s3Url);
     }
-  }, [aiImages]);
+    return s3Urls;
+  };
 
   return (
     <div className="min-h-screen flex bg-gray-900">
@@ -318,14 +233,6 @@ const ContentCreation: React.FC = () => {
               Create, preview, and schedule your social media content.
             </p>
           </div>
-          
-          <Button
-            onClick={() => setShowAIAssistant(!showAIAssistant)}
-            variant={showAIAssistant ? 'primary' : 'outline'}
-          >
-            <Bot className="w-4 h-4 mr-2" />
-            AI Assistant
-          </Button>
         </div>
 
         {/* Error/Success Messages */}
@@ -427,21 +334,19 @@ const ContentCreation: React.FC = () => {
               </Card>
             )}
 
-            {/* Media Upload */}
+            {/* Media Library Selection */}
             <Card>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                 Media Assets
               </h2>
-
-              {/* Media Options Grid */}
               <div className="flex gap-4">
-                {/* Upload Images */}
+                {/* Upload Images/Videos */}
                 <div
-                  className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-yellow-500 dark:hover:border-yellow-400 transition-colors cursor-pointer flex-1"
+                  className="border-2 border-yellow-400 dark:border-yellow-400 bg-gray-800/80 dark:bg-gray-800/80 rounded-lg p-6 text-center text-white hover:border-yellow-300 hover:shadow-lg transition-colors cursor-pointer flex-1 focus:outline-none focus:ring-2 focus:ring-yellow-400"
                   onClick={() => document.getElementById('media-upload-input')?.click()}
                   tabIndex={0}
                   role="button"
-                  aria-label="Upload Images"
+                  aria-label="Upload Images or Videos"
                   onKeyDown={e => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       document.getElementById('media-upload-input')?.click();
@@ -452,95 +357,47 @@ const ContentCreation: React.FC = () => {
                   <input
                     id="media-upload-input"
                     type="file"
-                    accept="image/*"
+                    accept="image/*,video/*"
                     style={{ display: 'none' }}
                     onChange={handleImageSelect}
                   />
-                  <Upload className="mx-auto mb-2" />
-                  <div>Upload Images</div>
-                  <div className="text-xs text-gray-500">PNG, JPG up to 10MB</div>
+                  <Upload className="mx-auto mb-2 w-8 h-8 text-yellow-300" />
+                  <div className="font-semibold text-lg">Upload Images or Videos</div>
+                  <div className="text-xs text-yellow-100">PNG, JPG, MP4 up to 10MB</div>
                 </div>
-
-                {/* AI Generate */}
+                {/* Select from Media Library */}
                 <div
-                  className="border-2 border-dashed border-purple-400 rounded-lg p-6 text-center hover:border-purple-500 dark:hover:border-purple-400 transition-colors cursor-pointer flex-1"
-                  onClick={() => setShowAIImageGen(true)}
+                  className="border-2 border-blue-500 dark:border-blue-400 bg-gray-800/80 dark:bg-gray-800/80 rounded-lg p-6 text-center text-white hover:border-blue-400 hover:shadow-lg transition-colors cursor-pointer flex-1 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  onClick={() => setShowMediaModal(true)}
                   tabIndex={0}
                   role="button"
-                  aria-label="AI Generate"
+                  aria-label="Select from Media Library"
                   onKeyDown={e => {
                     if (e.key === 'Enter' || e.key === ' ') {
-                      setShowAIImageGen(true);
+                      setShowMediaModal(true);
                     }
                   }}
                   style={{ minHeight: 120 }}
                 >
-                  <Wand2 className="mx-auto mb-2 w-8 h-8 text-purple-500" />
-                  <div className="text-sm font-medium text-gray-900 dark:text-white">AI Generate</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">Create visuals with AI</div>
+                  <Grid className="mx-auto mb-2 w-8 h-8 text-blue-400" />
+                  <div className="font-semibold text-lg">Select from Media Library</div>
+                  <div className="text-xs text-blue-100">Choose existing assets</div>
                 </div>
               </div>
-
-              
-
-              {/* AI Image Generation UI */}
-              {showAIImageGen && (
-                <div className="mt-4 p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-medium text-purple-900 dark:text-purple-300">
-                      AI Image Generation
-                    </h3>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => {
-                        setShowAIImageGen(false);
-                        setAiImagePrompt('');
-                        setAiImageError(null);
-                      }}
-                      aria-label="Close AI Image Generation"
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  <div className="space-y-3">
-                    <input
-                      type="text"
-                      value={aiImagePrompt}
-                      onChange={e => setAiImagePrompt(e.target.value)}
-                      placeholder="Describe the image you want to generate..."
-                      className="w-full px-3 py-2 border border-purple-300 dark:border-purple-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      autoFocus
-                    />
-                    <Button
-                      onClick={handleAIImageGenerate}
-                      disabled={!aiImagePrompt.trim() || aiImageLoading}
-                      loading={aiImageLoading}
-                      className="w-full bg-purple-600 hover:bg-purple-700 text-white"
-                    >
-                      <Wand2 className="w-4 h-4 mr-2" />
-                      {aiImageLoading ? 'Generating Image...' : 'Generate Image'}
-                    </Button>
-                    {aiImageError && (
-                      <div className="text-sm text-red-600 dark:text-red-400">{aiImageError}</div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Show uploaded images */}
+              {/* Show previews for uploaded and selected media */}
               <div className="mt-4 flex flex-wrap gap-2">
                 {previewUrls.map((url, idx) => (
                   <div
-                    key={idx}
+                    key={url}
                     className="relative border rounded bg-gray-50 flex items-center justify-center"
                     style={{ height: 120, width: 160 }}
                   >
-                    <img
-                      src={url}
-                      alt={`media-${idx}`}
-                      style={{ height: '100%', width: '100%', objectFit: 'cover', borderRadius: 8 }}
-                    />
+                    {/* Guess type by file extension for preview */}
+                    {selectedFiles[idx]?.type.startsWith('video') ? (
+                      <video src={url} controls style={{ height: '100%', width: '100%', objectFit: 'cover', borderRadius: 8 }} />
+                    ) : (
+                      <img src={url} alt={`media-upload-${idx}`} style={{ height: '100%', width: '100%', objectFit: 'cover', borderRadius: 8 }} />
+                    )}
                     <button
                       className="absolute top-1 right-1 bg-white rounded-full p-1 shadow hover:bg-red-100"
                       onClick={() => {
@@ -548,22 +405,27 @@ const ContentCreation: React.FC = () => {
                         setPreviewUrls(urls => urls.filter((_, i) => i !== idx));
                       }}
                       type="button"
-                      aria-label="Remove image"
+                      aria-label="Remove uploaded media"
                     >
                       <X className="w-3 h-3" />
                     </button>
                   </div>
                 ))}
-
-                {/* Show AI generated images */}
-                {aiImages.map((img, idx) => (
-                  <div key={idx} className="relative inline-block mr-2 mb-2">
-                    <img src={img} alt={`AI generated ${idx + 1}`} className="w-24 h-24 object-cover rounded" />
+                {selectedMedia.map((media, idx) => (
+                  <div key={media.id} className="relative border rounded bg-gray-50 flex items-center justify-center" style={{ height: 120, width: 160 }}>
+                    {media.type === 'video' ? (
+                      <video src={media.url} controls style={{ height: '100%', width: '100%', objectFit: 'cover', borderRadius: 8 }} />
+                    ) : (
+                      <img src={media.url} alt={media.name || `media-${idx}`} style={{ height: '100%', width: '100%', objectFit: 'cover', borderRadius: 8 }} />
+                    )}
                     <button
-                      onClick={() => setAiImages(aiImages.filter((_, i) => i !== idx))}
-                      className="absolute top-1 right-1 bg-white rounded-full p-1 shadow"
-                      aria-label="Remove AI image"
-                    >×</button>
+                      className="absolute top-1 right-1 bg-white rounded-full p-1 shadow hover:bg-red-100"
+                      onClick={() => setSelectedMedia(selectedMedia.filter((_, i) => i !== idx))}
+                      type="button"
+                      aria-label="Remove selected media"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
                   </div>
                 ))}
               </div>
@@ -689,18 +551,8 @@ const ContentCreation: React.FC = () => {
                           {generatedContent || 'Your content will appear here...'}
                         </p>
                         <div className="flex flex-wrap gap-2">
-                          {previewUrls.map((url, idx) => (
-                            <img key={idx} src={url} alt={`preview-media-${idx}`} style={{ height: 80, width: 100, objectFit: 'cover', borderRadius: 6 }} />
-                          ))}
-                          {aiImages.map((img, idx) => (
-                            <div key={idx} className="relative">
-                              <img src={img} alt={`AI generated ${idx + 1}`} style={{ height: 80, width: 100, objectFit: 'cover', borderRadius: 6 }} />
-                              <button
-                                onClick={() => setAiImages(aiImages.filter((_, i) => i !== idx))}
-                                className="absolute top-1 right-1 bg-white rounded-full p-1 shadow hover:bg-red-100"
-                                aria-label="Remove AI image"
-                              >×</button>
-                            </div>
+                          {selectedMedia.map((media, idx) => (
+                            <img key={idx} src={media.url} alt={`preview-media-${idx}`} style={{ height: 80, width: 100, objectFit: 'cover', borderRadius: 6 }} />
                           ))}
                         </div>
                       </div>
@@ -709,39 +561,6 @@ const ContentCreation: React.FC = () => {
                 })}
               </div>
             </Card>
-
-            {/* AI Assistant Panel */}
-            {showAIAssistant && (
-              <Card>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  AI Writing Assistant
-                </h3>
-                <div className="space-y-3">
-                  <Button variant="outline" size="sm" className="w-full justify-start">
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    Add hashtags
-                  </Button>
-                  <Button variant="outline" size="sm" className="w-full justify-start">
-                    <MessageSquare className="w-4 h-4 mr-2" />
-                    Make more professional
-                  </Button>
-                  <Button variant="outline" size="sm" className="w-full justify-start">
-                    <Wand2 className="w-4 h-4 mr-2" />
-                    Adjust tone
-                  </Button>
-                  <Button variant="outline" size="sm" className="w-full justify-start">
-                    <ImageIcon className="w-4 h-4 mr-2" />
-                    Suggest visuals
-                  </Button>
-                </div>
-                
-                <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
-                  <p className="text-sm text-yellow-800 dark:text-yellow-300">
-                    💡 Tip: Posts with client success stories get 35% more engagement
-                  </p>
-                </div>
-              </Card>
-            )}
 
             {/* Content Calendar Widget */}
             <Card>
@@ -760,6 +579,18 @@ const ContentCreation: React.FC = () => {
           </div>
         </div>
       </div>
+      <MediaSelectModal
+        open={showMediaModal}
+        onClose={() => setShowMediaModal(false)}
+        onConfirm={(newSelected) => {
+          setSelectedMedia(prev => {
+            const ids = new Set(prev.map(m => m.id));
+            return [...prev, ...newSelected.filter(m => !ids.has(m.id))];
+          });
+        }}
+        selected={selectedMedia}
+        token={token || ""}
+      />
     </div>
   );
 };

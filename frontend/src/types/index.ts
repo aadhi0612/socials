@@ -118,3 +118,21 @@ export interface ContentOut {
   platforms?: string[];
   scheduled_for?: string;
 }
+
+export interface MediaOut {
+  id: string;
+  user_id: string;
+  url: string;
+  type: string;
+  name?: string;
+  ai_generated?: boolean;
+  created_at?: string;
+}
+
+export interface MediaCreate {
+  url: string;
+  type: string;
+  name?: string;
+  ai_generated?: boolean;
+  tags?: string[];
+}
