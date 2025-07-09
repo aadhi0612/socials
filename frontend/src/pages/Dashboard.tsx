@@ -30,6 +30,7 @@ const Dashboard: React.FC = () => {
   const [contentError, setContentError] = useState<string | null>(null);
   const [showAllPosts, setShowAllPosts] = useState(false);
   const [showAllScheduled, setShowAllScheduled] = useState(false);
+  const [expandedPosts, setExpandedPosts] = useState<string[]>([]);
 
   const totalEngagement = mockPosts.reduce((sum, post) => sum + post.metrics.engagement, 0);
   const totalImpressions = mockPosts.reduce((sum, post) => sum + post.metrics.impressions, 0);
@@ -324,52 +325,72 @@ const Dashboard: React.FC = () => {
             </button>
             <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">All Posts</h2>
             <div className="space-y-4">
-              {allPostsSorted.map((post) => (
-                <div key={post.id} className="relative p-4 border border-gray-200 dark:border-gray-700 rounded-lg mb-2">
-                  {/* Status Badge (top left) */}
-                  <div className="flex items-center space-x-2 mb-2">
-                    <Badge variant={post.status === 'published' ? 'success' : post.status === 'scheduled' ? 'warning' : 'default'}>
-                      {post.status}
-                    </Badge>
-                  </div>
-
-                  {/* Platforms (top right) */}
-                  {post.platforms && post.platforms.length > 0 && (
-                    <div className="absolute top-4 right-4 flex gap-2">
-                      {post.platforms.map((platform, idx) => (
-                        <span
-                          key={idx}
-                          className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 px-2 py-0.5 rounded text-xs font-semibold"
-                        >
-                          {platform}
-                        </span>
-                      ))}
+              {allPostsSorted.map((post) => {
+                const isExpanded = expandedPosts.includes(post.id);
+                return (
+                  <div key={post.id} className="relative p-4 border border-gray-200 dark:border-gray-700 rounded-lg mb-2">
+                    {/* Status Badge (top left) */}
+                    <div className="flex items-center space-x-2 mb-2">
+                      <Badge variant={post.status === 'published' ? 'success' : post.status === 'scheduled' ? 'warning' : 'default'}>
+                        {post.status}
+                      </Badge>
                     </div>
-                  )}
 
-                  {/* Images */}
-                  {post.media && post.media.length > 0 && (
-                    <div className="flex gap-2 mb-2">
-                      {post.media.map((img, idx) => (
-                        <img
-                          key={idx}
-                          src={img}
-                          alt={`Post media ${idx + 1}`}
-                          className="w-20 h-20 object-cover rounded"
-                        />
-                      ))}
+                    {/* Platforms (top right) */}
+                    {post.platforms && post.platforms.length > 0 && (
+                      <div className="absolute top-4 right-4 flex gap-2">
+                        {post.platforms.map((platform, idx) => (
+                          <span
+                            key={idx}
+                            className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 px-2 py-0.5 rounded text-xs font-semibold"
+                          >
+                            {platform}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Images */}
+                    {post.media && post.media.length > 0 && (
+                      <div className="flex gap-2 mb-2">
+                        {post.media.map((img, idx) => (
+                          <img
+                            key={idx}
+                            src={img}
+                            alt={`Post media ${idx + 1}`}
+                            className="w-20 h-20 object-cover rounded"
+                          />
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Content */}
+                    <p className={`text-gray-900 dark:text-white mb-3 ${isExpanded ? '' : 'line-clamp-2'}`}>
+                      {post.body}
+                    </p>
+                    {/* See more/less button if content is long */}
+                    {!isExpanded && post.body && post.body.length > 120 && (
+                      <button
+                        className="text-blue-500 text-xs underline mb-2"
+                        onClick={() => setExpandedPosts(prev => [...prev, post.id])}
+                      >
+                        See more
+                      </button>
+                    )}
+                    {isExpanded && post.body && post.body.length > 120 && (
+                      <button
+                        className="text-blue-500 text-xs underline mb-2"
+                        onClick={() => setExpandedPosts(prev => prev.filter(id => id !== post.id))}
+                      >
+                        See less
+                      </button>
+                    )}
+                    <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+                      <span>{new Date(post.created_at).toLocaleString()}</span>
                     </div>
-                  )}
-
-                  {/* Content */}
-                  <p className="text-gray-900 dark:text-white mb-3 line-clamp-2">
-                    {post.body}
-                  </p>
-                  <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-                    <span>{new Date(post.created_at).toLocaleString()}</span>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
