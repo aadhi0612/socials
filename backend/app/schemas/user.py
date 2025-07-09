@@ -27,6 +27,7 @@ class UserCreate(BaseModel):
 
 class UserUpdate(BaseModel):
     name: Optional[str] = None
+    profile_pic_url: Optional[str] = None
 
 class UserListOut(BaseModel):
     users: List[UserOut]

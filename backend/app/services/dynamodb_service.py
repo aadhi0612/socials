@@ -45,6 +45,10 @@ def update_user(user_id: str, user_update: UserUpdate) -> Optional[UserOut]:
         update_expr.append('#nm = :name')
         expr_attr_values[':name'] = user_update.name
         expr_attr_names['#nm'] = 'name'
+    if user_update.profile_pic_url is not None:
+        update_expr.append('#pic = :pic')
+        expr_attr_values[':pic'] = user_update.profile_pic_url
+        expr_attr_names['#pic'] = 'profile_pic_url'
     if not update_expr:
         return get_user_by_id(user_id)
     update_expression = 'SET ' + ', '.join(update_expr)

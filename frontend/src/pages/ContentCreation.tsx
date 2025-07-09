@@ -27,8 +27,9 @@ import MediaSelectModal from '../components/UI/MediaSelectModal';
 
 const ContentCreation: React.FC = () => {
   const { user, loading, token } = useAuth();
-  const [prompt, setPrompt] = useState('');
+  const [inputValue, setInputValue] = useState('');
   const [generatedContent, setGeneratedContent] = useState('');
+  const [contentSource, setContentSource] = useState<'manual' | 'ai' | null>(null);
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(['1']);
   const [selectedMedia, setSelectedMedia] = useState<MediaOut[]>([]);
   const [showMediaModal, setShowMediaModal] = useState(false);
@@ -54,11 +55,11 @@ const ContentCreation: React.FC = () => {
 
   // Preview handler (UI only)
   const handlePreview = () => {
-    if (!prompt.trim()) {
-      setError('Please enter a prompt to preview.');
+    if (!generatedContent.trim()) {
+      setError('Please generate or write content before previewing.');
       return;
     }
-    setGeneratedContent(prompt);
+    // setGeneratedContent(prompt); // This line is removed as per the new structure
     setError(null);
     setSuccess(false);
   };
@@ -83,7 +84,7 @@ const ContentCreation: React.FC = () => {
         const libraryMedia = selectedMedia.map(m => m.url);
         const media = [...uploadedMedia, ...libraryMedia];
         await createContent({
-          title: prompt,
+          title: contentSource === 'ai' ? inputValue : inputValue, // Use contentSource to determine title
           body: generatedContent,
           platforms: selectedPlatformNames,
           scheduled_for,
@@ -119,7 +120,7 @@ const ContentCreation: React.FC = () => {
         const libraryMedia = selectedMedia.map(m => m.url);
         const media = [...uploadedMedia, ...libraryMedia];
         await createContent({
-          title: prompt,
+          title: contentSource === 'ai' ? inputValue : inputValue, // Use contentSource to determine title
           body: generatedContent,
           platforms: selectedPlatformNames,
           scheduled_for: undefined,
@@ -140,22 +141,39 @@ const ContentCreation: React.FC = () => {
     }
   };
 
-  // Update handleGenerateContent to use dynamic content
-  const handleGenerateContent = async () => {
-    if (!prompt.trim()) return;
+  // Manual Add Content Handler
+  const handleAddContent = () => {
+    if (!inputValue.trim()) {
+      setError('Please enter content to add.');
+      return;
+    }
+    setGeneratedContent(inputValue);
+    setContentSource('manual');
+    setError(null);
+    setSuccess(false);
+  };
+
+  // AI Generate Handler (update existing)
+  const handleAIGenerate = async () => {
+    if (!inputValue.trim()) return;
     setIsGenerating(true);
     setError(null);
     setSuccess(false);
     setGeneratedContent('');
-    setTimeout(() => {
-      setGeneratedContent(prompt);
+    try {
+      const res = await fetch('http://localhost:8000/ai/generate-text', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: inputValue })
+      });
+      const data = await res.json();
+      setGeneratedContent(data.generated_text || '');
+      setContentSource('ai');
+    } catch (err) {
+      setError('AI generation failed');
+    } finally {
       setIsGenerating(false);
-    }, 1000);
-  };
-
-  const handleRegenerateContent = () => {
-    if (!prompt.trim()) return;
-    handleGenerateContent();
+    }
   };
 
   const handlePlatformToggle = (platformId: string) => {
@@ -167,27 +185,6 @@ const ContentCreation: React.FC = () => {
   };
 
   const connectedPlatforms = mockPlatforms.filter(p => p.connected);
-
-  const handleAIGenerate = async () => {
-    if (!prompt.trim()) return;
-    setIsGenerating(true);
-    setError(null);
-    setSuccess(false);
-    setGeneratedContent('');
-    try {
-      const res = await fetch('http://localhost:8000/ai/generate-text', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt })
-      });
-      const data = await res.json();
-      setGeneratedContent(data.generated_text || '');
-    } catch (err) {
-      setError('AI generation failed');
-    } finally {
-      setIsGenerating(false);
-    }
-  };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -256,43 +253,32 @@ const ContentCreation: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Content Creation Form */}
           <div className="lg:col-span-2 space-y-6">
-            {/* AI Prompt */}
+            {/* AI Content Generator */}
             <Card>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                AI Content Generator
+                Content Generator
               </h2>
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Describe your topic or campaign brief
-                  </label>
-                  <div className="flex gap-2">
-                    <textarea
-                      value={prompt}
-                      onChange={(e) => setPrompt(e.target.value)}
-                      placeholder="e.g., digital transformation in financial services, sustainability initiatives, tax technology innovations..."
-                      className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-yellow-500 focus:border-transparent resize-none"
-                    />
-                    <Button
-                      onClick={handleAIGenerate}
-                      disabled={!prompt.trim() || isGenerating}
-                      loading={isGenerating}
-                      variant="outline"
-                    >
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      AI Generate
-                    </Button>
-                  </div>
+                <textarea
+                  value={inputValue}
+                  onChange={e => setInputValue(e.target.value)}
+                  placeholder="Type your content or campaign brief here..."
+                  className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-yellow-500 focus:border-transparent resize-none"
+                />
+                <div className="flex gap-2">
+                  <Button onClick={handleAddContent} disabled={!inputValue.trim()} className="flex-1">
+                    Add Content
+                  </Button>
+                  <Button
+                    onClick={handleAIGenerate}
+                    disabled={!inputValue.trim() || isGenerating}
+                    loading={isGenerating}
+                    className="flex-1"
+                  >
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    AI Generate
+                  </Button>
                 </div>
-                <Button 
-                  onClick={handleGenerateContent}
-                  disabled={!prompt.trim() || isGenerating}
-                  loading={isGenerating}
-                  className="w-full"
-                >
-                  <Wand2 className="w-4 h-4 mr-2" />
-                  {isGenerating ? 'Generating Content...' : 'Generate Content'}
-                </Button>
               </div>
             </Card>
 
@@ -304,32 +290,26 @@ const ContentCreation: React.FC = () => {
                     Generated Content
                   </h2>
                   <div className="flex items-center space-x-2">
-                    <Badge variant="info">
-                      <Sparkles className="w-3 h-3 mr-1" />
-                      AI Generated
-                    </Badge>
-                    <Button size="sm" variant="ghost" onClick={handleRegenerateContent}>
-                      <RefreshCw className="w-4 h-4" />
-                    </Button>
+                    {contentSource === 'ai' && (
+                      <Badge variant="info">
+                        <Sparkles className="w-3 h-3 mr-1" />
+                        AI Generated
+                      </Badge>
+                    )}
+                    {contentSource === 'manual' && (
+                      <Badge variant="default">
+                        Added Content
+                      </Badge>
+                    )}
                   </div>
                 </div>
                 <textarea
                   value={generatedContent}
-                  onChange={(e) => setGeneratedContent(e.target.value)}
+                  onChange={e => setGeneratedContent(e.target.value)}
                   className="w-full h-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent resize-none"
                 />
                 <div className="flex items-center justify-between mt-4 text-sm text-gray-500 dark:text-gray-400">
                   <span>{generatedContent.length} characters</span>
-                  <div className="flex space-x-2">
-                    <Button size="sm" variant="ghost" onClick={handleRegenerateContent}>
-                      <Wand2 className="w-4 h-4 mr-1" />
-                      Regenerate
-                    </Button>
-                    <Button size="sm" variant="ghost">
-                      <MessageSquare className="w-4 h-4 mr-1" />
-                      Refine
-                    </Button>
-                  </div>
                 </div>
               </Card>
             )}
@@ -384,50 +364,58 @@ const ContentCreation: React.FC = () => {
                   <div className="text-xs text-blue-100">Choose existing assets</div>
                 </div>
               </div>
-              {/* Show previews for uploaded and selected media */}
+              {/* Show previews for uploaded and selected media, or a message if none */}
               <div className="mt-4 flex flex-wrap gap-2">
-                {previewUrls.map((url, idx) => (
-                  <div
-                    key={url}
-                    className="relative border rounded bg-gray-50 flex items-center justify-center"
-                    style={{ height: 120, width: 160 }}
-                  >
-                    {/* Guess type by file extension for preview */}
-                    {selectedFiles[idx]?.type.startsWith('video') ? (
-                      <video src={url} controls style={{ height: '100%', width: '100%', objectFit: 'cover', borderRadius: 8 }} />
-                    ) : (
-                      <img src={url} alt={`media-upload-${idx}`} style={{ height: '100%', width: '100%', objectFit: 'cover', borderRadius: 8 }} />
-                    )}
-                    <button
-                      className="absolute top-1 right-1 bg-white rounded-full p-1 shadow hover:bg-red-100"
-                      onClick={() => {
-                        setSelectedFiles(files => files.filter((_, i) => i !== idx));
-                        setPreviewUrls(urls => urls.filter((_, i) => i !== idx));
-                      }}
-                      type="button"
-                      aria-label="Remove uploaded media"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
+                {previewUrls.length === 0 && selectedMedia.length === 0 ? (
+                  <div className="w-full text-center text-gray-500 dark:text-gray-400 py-8">
+                    No media was uploaded.
                   </div>
-                ))}
-                {selectedMedia.map((media, idx) => (
-                  <div key={media.id} className="relative border rounded bg-gray-50 flex items-center justify-center" style={{ height: 120, width: 160 }}>
-                    {media.type === 'video' ? (
-                      <video src={media.url} controls style={{ height: '100%', width: '100%', objectFit: 'cover', borderRadius: 8 }} />
-                    ) : (
-                      <img src={media.url} alt={media.name || `media-${idx}`} style={{ height: '100%', width: '100%', objectFit: 'cover', borderRadius: 8 }} />
-                    )}
-                    <button
-                      className="absolute top-1 right-1 bg-white rounded-full p-1 shadow hover:bg-red-100"
-                      onClick={() => setSelectedMedia(selectedMedia.filter((_, i) => i !== idx))}
-                      type="button"
-                      aria-label="Remove selected media"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                ))}
+                ) : (
+                  <>
+                    {previewUrls.map((url, idx) => (
+                      <div
+                        key={url}
+                        className="relative border rounded bg-gray-50 flex items-center justify-center"
+                        style={{ height: 120, width: 160 }}
+                      >
+                        {/* Guess type by file extension for preview */}
+                        {selectedFiles[idx]?.type.startsWith('video') ? (
+                          <video src={url} controls style={{ height: '100%', width: '100%', objectFit: 'cover', borderRadius: 8 }} />
+                        ) : (
+                          <img src={url} alt={`media-upload-${idx}`} style={{ height: '100%', width: '100%', objectFit: 'cover', borderRadius: 8 }} />
+                        )}
+                        <button
+                          className="absolute top-1 right-1 bg-white rounded-full p-1 shadow hover:bg-red-100"
+                          onClick={() => {
+                            setSelectedFiles(files => files.filter((_, i) => i !== idx));
+                            setPreviewUrls(urls => urls.filter((_, i) => i !== idx));
+                          }}
+                          type="button"
+                          aria-label="Remove uploaded media"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                    {selectedMedia.map((media, idx) => (
+                      <div key={media.id} className="relative border rounded bg-gray-50 flex items-center justify-center" style={{ height: 120, width: 160 }}>
+                        {media.type === 'video' ? (
+                          <video src={media.url} controls style={{ height: '100%', width: '100%', objectFit: 'cover', borderRadius: 8 }} />
+                        ) : (
+                          <img src={media.url} alt={media.name || `media-${idx}`} style={{ height: '100%', width: '100%', objectFit: 'cover', borderRadius: 8 }} />
+                        )}
+                        <button
+                          className="absolute top-1 right-1 bg-white rounded-full p-1 shadow hover:bg-red-100"
+                          onClick={() => setSelectedMedia(selectedMedia.filter((_, i) => i !== idx))}
+                          type="button"
+                          aria-label="Remove selected media"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </>
+                )}
               </div>
             </Card>
 

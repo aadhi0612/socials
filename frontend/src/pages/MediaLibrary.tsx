@@ -330,7 +330,11 @@ const MediaLibrary: React.FC = () => {
         {/* Asset Grid/List */}
         <div className="lg:col-span-3">
           <Card padding={false}>
-            {viewMode === 'grid' ? (
+            {filteredAssets.length === 0 ? (
+              <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+                No media was uploaded.
+              </div>
+            ) : viewMode === 'grid' ? (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-6">
                 {filteredAssets.map((asset) => (
                   <div

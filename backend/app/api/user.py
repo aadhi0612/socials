@@ -83,6 +83,32 @@ def update_current_user(user_update: UserUpdate, current_user=Depends(get_curren
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
+# --- JWT Auth Dependency (move this up) ---
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="users/login")
+
+def get_current_user_jwt(token: str = Depends(oauth2_scheme)):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("user_id")
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="Invalid token: no user_id")
+        # Optionally, fetch user from DB here
+        return {"user_id": user_id, "role": payload.get("role")}
+    except jwt.PyJWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+        )
+
+@router.put("/me/profile-pic", response_model=UserOut)
+def update_profile_pic(profile_pic_url: str = Body(..., embed=True), current_user=Depends(get_current_user_jwt)):
+    from app.services.dynamodb_service import update_user
+    user_update = UserUpdate(profile_pic_url=profile_pic_url)
+    user = update_user(current_user["user_id"], user_update)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
 @router.get("/", response_model=UserListOut)
 def get_all_users(current_user=Depends(get_current_user)):
     if current_user["role"] != "admin" and current_user["role"] != "Admin":
@@ -123,19 +149,3 @@ async def get_profile_pic_upload_url(request: Request):
         ExpiresIn=600,
     )
     return {"url": url, "key": key, "user_id": user_id}
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="users/login")
-
-def get_current_user_jwt(token: str = Depends(oauth2_scheme)):
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id = payload.get("user_id")
-        if user_id is None:
-            raise HTTPException(status_code=401, detail="Invalid token: no user_id")
-        # Optionally, fetch user from DB here
-        return {"user_id": user_id, "role": payload.get("role")}
-    except jwt.PyJWTError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-        )

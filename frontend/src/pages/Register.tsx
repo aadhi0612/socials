@@ -145,6 +145,15 @@ const Register: React.FC = () => {
         <button type="submit" disabled={loading} className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg mt-6 transition-colors">
           {loading ? 'Registering...' : 'Register'}
         </button>
+        <div className="text-center mt-4">
+          <button
+            type="button"
+            className="text-purple-400 hover:text-purple-200 underline text-sm"
+            onClick={() => navigate('/login')}
+          >
+            Back to Login
+          </button>
+        </div>
       </form>
     </div>
   );
