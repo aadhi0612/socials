@@ -52,7 +52,7 @@ const Register: React.FC = () => {
     setError(null);
     setLoading(true);
 
-    let profilePicUrl = '';
+    let profilePicUrl: string | undefined = undefined;
     let userId = '';
     try {
       // 1. Always get a user_id and presigned URL from backend
@@ -72,17 +72,17 @@ const Register: React.FC = () => {
           body: profilePic,
         });
         // 3. Construct the S3 URL
-        const bucket = import.meta.env.VITE_AWS_S3_BUCKET || 'your-bucket-name';
-        const region = import.meta.env.VITE_AWS_REGION || 'ap-south-1';
+        const bucket = import.meta.env.VITE_AWS_S3_BUCKET;
+        const region = import.meta.env.VITE_AWS_REGION;
         profilePicUrl = `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
       }
 
-      // 4. Register user with all fields, including user_id and profile_pic_url
+      // 4. Register user with all fields, including user_id and profile_pic_url if present
       const userData: RegisterUser & { id?: string } = {
         ...form,
         aws_community: awsCommunity,
-        profile_pic_url: profilePicUrl,
         id: userId,
+        ...(profilePicUrl ? { profile_pic_url: profilePicUrl } : {})
       };
       console.log("Registering user with data:", userData);
       await register(userData);

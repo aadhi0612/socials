@@ -69,27 +69,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     let loginResult = null;
     try {
       loginResult = await login(email, password);
-      console.log('Login result:', loginResult);
+      if (loginResult && loginResult.user_id && loginResult.token) {
+        setToken(loginResult.token);
+        sessionStorage.setItem('token', loginResult.token);
+        sessionStorage.setItem('user_id', loginResult.user_id);
+        // Fetch the full user object (with profile_pic_url)
+        const backendUser = await getUser(loginResult.user_id, loginResult.token);
+        setUser(backendUser);
+        sessionStorage.setItem('user', JSON.stringify(backendUser));
+      }
     } catch (err) {
       console.log('Login error:', err);
       throw new Error('Invalid credentials');
-    }
-    if (loginResult && loginResult.user_id && loginResult.token) {
-      setToken(loginResult.token);
-      console.log('Storing token:', loginResult.token);
-      sessionStorage.setItem('token', loginResult.token);
-      sessionStorage.setItem('user_id', loginResult.user_id);
-      const backendUser = await getUser(loginResult.user_id, loginResult.token);
-      setUser(backendUser);
-      console.log('Storing user:', backendUser);
-      sessionStorage.setItem('user', JSON.stringify(backendUser));
-      console.log('Session storage after login:', {
-        token: sessionStorage.getItem('token'),
-        user_id: sessionStorage.getItem('user_id'),
-        user: sessionStorage.getItem('user')
-      });
-    } else {
-      console.log('Login failed: No token or user_id in loginResult', loginResult);
     }
   };
 

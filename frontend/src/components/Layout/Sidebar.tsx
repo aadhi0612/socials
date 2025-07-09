@@ -61,9 +61,9 @@ const Sidebar: React.FC = () => {
       <div className="p-4 border-t border-gray-200 dark:border-gray-700">
         <div className="flex items-center space-x-3 mb-4">
           <img
-            src={user?.profile_pic_url || '/default-user-icon.png'}
+            src={user?.profile_pic_url && user.profile_pic_url.startsWith('http') ? user.profile_pic_url : '/default-user-icon.png'}
             alt={user?.name}
-            className="w-10 h-10 rounded-full object-cover"
+            className="w-10 h-10 rounded-full object-cover bg-gray-200"
           />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
