@@ -186,7 +186,7 @@ const Dashboard: React.FC = () => {
                     )}
                     
                     {/* Content */}
-                    <p className="text-gray-900 dark:text-white mb-3 line-clamp-2">
+                    <p className="text-gray-900 dark:text-white mb-3">
                       {post.body}
                     </p>
                     <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
