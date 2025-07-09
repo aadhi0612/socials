@@ -6,3 +6,11 @@ email-validator
 bcrypt
 uuid
 PyJWT
+sqlalchemy
+psycopg2-binary
+alembic
+tweepy
+requests
+requests-oauthlib
+APScheduler
+python-multipart
