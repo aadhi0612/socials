@@ -9,6 +9,7 @@ import ContentCreation from './pages/ContentCreation';
 import MediaLibrary from './pages/MediaLibrary';
 import CampaignManager from './pages/CampaignManager';
 import AdminDashboard from './pages/AdminDashboard';
+import LinkedInIntegration from './pages/LinkedInIntegration';
 import Register from './pages/Register';
 import Login from './pages/Login';
 import Main from './pages/Main';
@@ -53,6 +54,7 @@ const AppContent: React.FC = () => {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/create" element={<ContentCreation />} />
             <Route path="/media" element={<MediaLibrary />} />
+            <Route path="/linkedin" element={<LinkedInIntegration />} />
             <Route path="/campaigns" element={<CampaignManager />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/register" element={<Register />} />

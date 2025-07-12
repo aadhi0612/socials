@@ -1,5 +1,5 @@
 """
-LinkedIn API integration
+LinkedIn API integration with OAuth and Page support
 """
 import requests
 import json
@@ -14,7 +14,7 @@ from .base import BaseSocialPlatform, PostContent, PostResult, PostAnalytics
 logger = logging.getLogger(__name__)
 
 class LinkedInPlatform(BaseSocialPlatform):
-    """LinkedIn API integration"""
+    """LinkedIn API integration with OAuth and Page support"""
     
     def __init__(self):
         super().__init__("linkedin")
@@ -22,25 +22,18 @@ class LinkedInPlatform(BaseSocialPlatform):
         self.auth_url = "https://www.linkedin.com/oauth/v2/authorization"
         self.token_url = "https://www.linkedin.com/oauth/v2/accessToken"
         
-        # Try to get platform credentials from AWS Secrets Manager, fallback to env
-        try:
-            from ..aws_secrets import secrets_manager
-            creds = secrets_manager.get_platform_credentials("linkedin")
-            self.client_id = creds["client_id"]
-            self.client_secret = creds["client_secret"]
-        except Exception as e:
-            logger.warning(f"Could not load LinkedIn credentials from AWS: {e}")
-            # Fallback to environment variables or direct values
-            self.client_id = os.getenv("LINKEDIN_CLIENT_ID", "86vkop6nen6kvi")
-            self.client_secret = os.getenv("LINKEDIN_CLIENT_SECRET", "WPL_AP1.AL44Zi3CwnFkpAz2.1uCXAw==")
+        # Use the provided credentials
+        self.client_id = os.getenv("LINKEDIN_CLIENT_ID", "86vkop6nen6kvi")
+        self.client_secret = os.getenv("LINKEDIN_CLIENT_SECRET", "WPL_AP1.AL44Zi3CwnFkpAz2.1uCXAw==")
     
     def get_oauth_url(self, redirect_uri: str, state: str = None) -> str:
-        """Generate LinkedIn OAuth authorization URL"""
+        """Generate LinkedIn OAuth authorization URL with enhanced permissions"""
         params = {
             "response_type": "code",
             "client_id": self.client_id,
             "redirect_uri": redirect_uri,
-            "scope": "r_liteprofile r_emailaddress w_member_social",
+            # Enhanced scopes for profile, pages, and posting
+            "scope": "r_liteprofile r_emailaddress w_member_social r_organization_social w_organization_social",
         }
         if state:
             params["state"] = state
@@ -78,10 +71,65 @@ class LinkedInPlatform(BaseSocialPlatform):
             headers=headers
         )
         profile_response.raise_for_status()
+        profile_data = profile_response.json()
         
-        return profile_response.json()
+        # Get email address
+        try:
+            email_response = requests.get(
+                f"{self.base_url}/emailAddress?q=members&projection=(elements*(handle~))",
+                headers=headers
+            )
+            if email_response.status_code == 200:
+                email_data = email_response.json()
+                if email_data.get("elements"):
+                    profile_data["email"] = email_data["elements"][0]["handle~"]["emailAddress"]
+        except Exception as e:
+            logger.warning(f"Could not fetch email: {e}")
+        
+        return profile_data
     
-    def upload_media(self, media_url: str, access_token: str) -> str:
+    def get_user_pages(self, access_token: str) -> List[Dict[str, Any]]:
+        """Get LinkedIn pages/organizations that user can manage"""
+        headers = {"Authorization": f"Bearer {access_token}"}
+        
+        try:
+            # Get organizations where user has admin access
+            response = requests.get(
+                f"{self.base_url}/organizationAcls?q=roleAssignee&role=ADMINISTRATOR&projection=(elements*(organization~(id,name,logoV2(original~:playableStreams))))",
+                headers=headers
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                pages = []
+                
+                for element in data.get("elements", []):
+                    org = element.get("organization~", {})
+                    if org:
+                        page_info = {
+                            "id": org.get("id"),
+                            "name": org.get("name"),
+                            "type": "organization",
+                            "logo_url": None
+                        }
+                        
+                        # Extract logo URL if available
+                        logo_data = org.get("logoV2", {}).get("original~", {})
+                        if logo_data.get("elements"):
+                            page_info["logo_url"] = logo_data["elements"][0].get("identifiers", [{}])[0].get("identifier")
+                        
+                        pages.append(page_info)
+                
+                return pages
+            else:
+                logger.warning(f"Could not fetch LinkedIn pages: {response.status_code}")
+                return []
+                
+        except Exception as e:
+            logger.error(f"Error fetching LinkedIn pages: {e}")
+            return []
+    
+    def upload_media(self, media_url: str, access_token: str, owner_urn: str = None) -> str:
         """Upload image to LinkedIn and return asset URN"""
         headers = {
             "Authorization": f"Bearer {access_token}",
@@ -89,15 +137,16 @@ class LinkedInPlatform(BaseSocialPlatform):
             "X-Restli-Protocol-Version": "2.0.0"
         }
         
-        # Get user URN first
-        user_info = self.get_user_info(access_token)
-        person_urn = f"urn:li:person:{user_info['id']}"
+        # If no owner_urn provided, use user's URN
+        if not owner_urn:
+            user_info = self.get_user_info(access_token)
+            owner_urn = f"urn:li:person:{user_info['id']}"
         
         # Step 1: Register upload
         register_data = {
             "registerUploadRequest": {
                 "recipes": ["urn:li:digitalmediaRecipe:feedshare-image"],
-                "owner": person_urn,
+                "owner": owner_urn,
                 "serviceRelationships": [
                     {
                         "relationshipType": "OWNER",
@@ -129,8 +178,8 @@ class LinkedInPlatform(BaseSocialPlatform):
         
         return asset_urn
     
-    def post_content(self, content: PostContent, access_token: str) -> PostResult:
-        """Post content to LinkedIn"""
+    def post_content(self, content: PostContent, access_token: str, target_urn: str = None) -> PostResult:
+        """Post content to LinkedIn (profile or page)"""
         try:
             headers = {
                 "Authorization": f"Bearer {access_token}",
@@ -138,13 +187,17 @@ class LinkedInPlatform(BaseSocialPlatform):
                 "X-Restli-Protocol-Version": "2.0.0"
             }
             
-            # Get user info
-            user_info = self.get_user_info(access_token)
-            person_urn = f"urn:li:person:{user_info['id']}"
+            # Determine author URN (user or organization)
+            if target_urn:
+                author_urn = target_urn
+            else:
+                # Default to user's profile
+                user_info = self.get_user_info(access_token)
+                author_urn = f"urn:li:person:{user_info['id']}"
             
             # Prepare post data
             post_data = {
-                "author": person_urn,
+                "author": author_urn,
                 "lifecycleState": "PUBLISHED",
                 "specificContent": {
                     "com.linkedin.ugc.ShareContent": {
@@ -163,7 +216,7 @@ class LinkedInPlatform(BaseSocialPlatform):
             if content.media_urls and content.media_type == "image":
                 media_assets = []
                 for media_url in content.media_urls:
-                    asset_urn = self.upload_media(media_url, access_token)
+                    asset_urn = self.upload_media(media_url, access_token, author_urn)
                     media_assets.append({
                         "status": "READY",
                         "description": {

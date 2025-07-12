@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from app.api import user, content, ai, community, media
+from app.api import user, content, ai, community, media, oauth_posts
 from .database import create_tables
 from .routers import social_auth, social_posts
 
@@ -82,6 +82,7 @@ app.include_router(media.router)
 # Include new social media routers
 app.include_router(social_auth.router, prefix="/api/v1")
 app.include_router(social_posts.router, prefix="/api/v1")
+app.include_router(oauth_posts.router, prefix="/api/v1")  # New OAuth router
 
 @app.on_event("startup")
 async def startup_event():
@@ -104,11 +105,13 @@ def read_root():
             "Post scheduling and automation",
             "OAuth authentication",
             "Analytics collection",
-            "Secure credential storage with AWS Secrets Manager"
+            "Secure credential storage with AWS Secrets Manager",
+            "LinkedIn OAuth integration with page support"
         ],
         "endpoints": {
             "social_auth": "/api/v1/auth",
             "social_posts": "/api/v1/posts",
+            "oauth_posts": "/api/v1/oauth-posts",
             "docs": "/docs"
         }
     }
