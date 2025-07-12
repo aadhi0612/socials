@@ -1,0 +1,48 @@
+service: socials-backend
+
+provider:
+  name: aws
+  runtime: python3.9
+  region: us-east-2
+  stage: prod
+  environment:
+    DEFAULT_REGION: us-east-2
+    BEDROCK_REGION: us-east-1
+    S3_BUCKET: socials-aws-1
+    X_API_KEY: ${env:X_API_KEY}
+    X_API_KEY_SECRET: ${env:X_API_KEY_SECRET}
+    X_BEARER_TOKEN: ${env:X_BEARER_TOKEN}
+    X_ACCESS_TOKEN: ${env:X_ACCESS_TOKEN}
+    X_ACCESS_TOKEN_SECRET: ${env:X_ACCESS_TOKEN_SECRET}
+    LINKEDIN_CLIENT_ID: ${env:LINKEDIN_CLIENT_ID}
+    LINKEDIN_CLIENT_SECRET: ${env:LINKEDIN_CLIENT_SECRET}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - bedrock:*
+        - s3:*
+        - dynamodb:*
+        - secretsmanager:GetSecretValue
+      Resource: "*"
+
+functions:
+  api:
+    handler: lambda_handler.handler
+    events:
+      - http:
+          path: /{proxy+}
+          method: ANY
+          cors: true
+      - http:
+          path: /
+          method: ANY
+          cors: true
+    timeout: 30
+
+plugins:
+  - serverless-python-requirements
+
+custom:
+  pythonRequirements:
+    dockerizePip: true
+    slim: true

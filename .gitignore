@@ -12,12 +12,12 @@ dist
 dist-ssr
 *.local
 
-# Environment files
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# Environment files - TEMPORARILY COMMENTED OUT FOR DEPLOYMENT
+# .env
+# .env.local
+# .env.development.local
+# .env.test.local
+# .env.production.local
 .env.x-credentials
 .env.social-credentials
 

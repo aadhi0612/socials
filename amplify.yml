@@ -3,22 +3,20 @@ frontend:
   phases:
     preBuild:
       commands:
-        - echo "Node version:"
-        - node --version
-        - echo "NPM version:"
-        - npm --version
+        - echo "🚀 Starting Socials Frontend Build"
+        - echo "Node version:" && node --version
+        - echo "NPM version:" && npm --version
         - echo "Installing dependencies..."
         - npm ci
-        - echo "Dependencies installed successfully"
     build:
       commands:
-        - echo "Building the application..."
+        - echo "🎨 Building React application..."
         - npm run build
-        - echo "Build completed"
-        - echo "Checking build output..."
+        - echo "✅ Frontend build completed"
+        - echo "📁 Build output:"
         - ls -la dist/
-        - echo "Contents of dist directory:"
-        - find dist/ -type f -name "*.html" -o -name "*.js" -o -name "*.css" | head -10
+        - echo "📄 Index.html check:"
+        - ls -la dist/index.html
   artifacts:
     baseDirectory: dist
     files:
@@ -28,16 +26,9 @@ frontend:
       - node_modules/**/*
 environment:
   variables:
-    # Node.js version
-    _LIVE_UPDATES: '[{"name":"Node.js version","pkg":"node","type":"nvm","version":"18"}]'
-    # Frontend environment variables
+    # Frontend Configuration
+    VITE_NODE_ENV: production
+    VITE_API_URL: https://socials.dataopslabs.com/api
     VITE_AWS_S3_BUCKET: socials-aws-1
     REACT_APP_AWS_REGION: us-east-2
-    VITE_API_URL: https://socials.dataopslabs.com/api
     VITE_FRONTEND_URL: https://socials.dataopslabs.com
-    # Backend environment variables (using non-AWS prefixed names)
-    DEFAULT_REGION: us-east-2
-    BEDROCK_REGION: us-east-1
-    S3_BUCKET: socials-aws-1
-    # Social media credentials (set these in Amplify console)
-    LINKEDIN_CLIENT_ID: 86vkop6nen6kvi
