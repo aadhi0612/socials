@@ -25,9 +25,9 @@ app = FastAPI(
 # Production and development origins
 allowed_origins = [
     "https://socials.dataopslabs.com",
-    "http://localhost:5173",
+    "https://socials.dataopslabs.com",
     "http://127.0.0.1:5173",
-    "http://localhost:3000",
+    "https://wi6uxcbvs9.execute-api.us-east-2.amazonaws.com/prod",
     "http://127.0.0.1:3000"
 ]
 

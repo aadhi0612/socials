@@ -64,7 +64,7 @@ npm run dev
 
 ## 🔧 Development Access Points
 
-- **Frontend**: http://localhost:5173
+- **Frontend**: https://socials.dataopslabs.com
 - **Backend API**: http://localhost:8000
 - **API Documentation**: http://localhost:8000/docs
 

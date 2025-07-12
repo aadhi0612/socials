@@ -42,7 +42,7 @@ functions:
           cors:
             allowOrigins:
               - https://socials.dataopslabs.com
-              - http://localhost:5173
+              - https://socials.dataopslabs.com
             allowHeaders:
               - Content-Type
               - Authorization
@@ -60,7 +60,7 @@ functions:
           cors:
             allowOrigins:
               - https://socials.dataopslabs.com
-              - http://localhost:5173
+              - https://socials.dataopslabs.com
             allowHeaders:
               - Content-Type
               - Authorization
