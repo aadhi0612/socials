@@ -16,11 +16,11 @@ const isDevelopment = import.meta.env.DEV;
 const isProduction = import.meta.env.PROD;
 
 export const awsConfig: AWSConfig = {
-  region: import.meta.env.VITE_AWS_REGION || 'us-east-2',
+  region: import.meta.env.VITE_AWS_REGION || import.meta.env.REACT_APP_AWS_REGION || 'us-east-2',
   s3Bucket: import.meta.env.VITE_AWS_S3_BUCKET || 'socials-aws-1',
   apiUrl: isDevelopment 
     ? 'http://localhost:8000'
-    : import.meta.env.VITE_API_URL || 'https://api.socials.dataopslabs.com',
+    : import.meta.env.VITE_API_URL || 'https://socials.dataopslabs.com/api',
   
   // Cognito configuration (for future authentication)
   cognitoUserPoolId: import.meta.env.VITE_COGNITO_USER_POOL_ID,
@@ -32,7 +32,7 @@ export const awsConfig: AWSConfig = {
 
 // Environment validation
 if (isProduction) {
-  const requiredEnvVars = ['VITE_AWS_REGION', 'VITE_AWS_S3_BUCKET', 'VITE_API_URL'];
+  const requiredEnvVars = ['VITE_AWS_S3_BUCKET', 'VITE_API_URL'];
   const missingVars = requiredEnvVars.filter(varName => !import.meta.env[varName]);
   
   if (missingVars.length > 0) {

@@ -12,9 +12,9 @@ logger = logging.getLogger(__name__)
 class AWSConfig:
     def __init__(self):
         self.is_lambda = self._is_lambda_environment()
-        self.region = os.getenv("AWS_DEFAULT_REGION", "us-east-2")
-        self.bedrock_region = os.getenv("AWS_BEDROCK_REGION", "us-east-1")
-        self.s3_bucket = os.getenv("AWS_S3_BUCKET", "socials-aws-1")
+        self.region = os.getenv("DEFAULT_REGION", "us-east-2")
+        self.bedrock_region = os.getenv("BEDROCK_REGION", "us-east-1")
+        self.s3_bucket = os.getenv("S3_BUCKET", "socials-aws-1")
         
         if self.is_lambda:
             logger.info("🚀 Running in AWS Lambda/Serverless environment")
@@ -28,13 +28,14 @@ class AWSConfig:
     
     def _validate_local_credentials(self):
         """Validate local development credentials"""
+        # For local development, check if AWS credentials are available
         access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
         secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
         
         if not access_key_id or not secret_access_key:
-            raise ValueError("AWS credentials not found in environment variables for local development")
-        
-        logger.info(f"✅ Local AWS credentials configured for region: {self.region}")
+            logger.warning("⚠️ AWS credentials not found in environment variables for local development")
+        else:
+            logger.info(f"✅ Local AWS credentials configured for region: {self.region}")
         
         # Log session token status for temporary credentials
         if os.getenv("AWS_SESSION_TOKEN"):
@@ -48,18 +49,25 @@ class AWSConfig:
             # In Lambda, use IAM roles automatically
             return boto3.Session(region_name=target_region)
         else:
-            # Local development with explicit credentials
-            session_kwargs = {
-                'aws_access_key_id': os.getenv("AWS_ACCESS_KEY_ID"),
-                'aws_secret_access_key': os.getenv("AWS_SECRET_ACCESS_KEY"),
-                'region_name': target_region
-            }
+            # Local development with explicit credentials (if available)
+            access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
+            secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
             
-            # Add session token for temporary credentials
-            if os.getenv("AWS_SESSION_TOKEN"):
-                session_kwargs['aws_session_token'] = os.getenv("AWS_SESSION_TOKEN")
-            
-            return boto3.Session(**session_kwargs)
+            if access_key_id and secret_access_key:
+                session_kwargs = {
+                    'aws_access_key_id': access_key_id,
+                    'aws_secret_access_key': secret_access_key,
+                    'region_name': target_region
+                }
+                
+                # Add session token for temporary credentials
+                if os.getenv("AWS_SESSION_TOKEN"):
+                    session_kwargs['aws_session_token'] = os.getenv("AWS_SESSION_TOKEN")
+                
+                return boto3.Session(**session_kwargs)
+            else:
+                # Fallback to default credentials (IAM roles, profiles, etc.)
+                return boto3.Session(region_name=target_region)
     
     def get_client(self, service_name, region=None):
         """Get boto3 client for a specific service"""

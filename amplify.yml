@@ -3,10 +3,22 @@ frontend:
   phases:
     preBuild:
       commands:
+        - echo "Node version:"
+        - node --version
+        - echo "NPM version:"
+        - npm --version
+        - echo "Installing dependencies..."
         - npm ci
+        - echo "Dependencies installed successfully"
     build:
       commands:
+        - echo "Building the application..."
         - npm run build
+        - echo "Build completed"
+        - echo "Checking build output..."
+        - ls -la dist/
+        - echo "Contents of dist directory:"
+        - find dist/ -type f -name "*.html" -o -name "*.js" -o -name "*.css" | head -10
   artifacts:
     baseDirectory: dist
     files:
@@ -14,30 +26,18 @@ frontend:
   cache:
     paths:
       - node_modules/**/*
-backend:
-  phases:
-    preBuild:
-      commands:
-        - cd backend
-        - pip install -r requirements.txt
-    build:
-      commands:
-        - cd backend
-        - echo "Backend prepared for serverless deployment"
-  artifacts:
-    baseDirectory: backend
-    files:
-      - '**/*'
 environment:
   variables:
+    # Node.js version
+    _LIVE_UPDATES: '[{"name":"Node.js version","pkg":"node","type":"nvm","version":"18"}]'
     # Frontend environment variables
     VITE_AWS_S3_BUCKET: socials-aws-1
     REACT_APP_AWS_REGION: us-east-2
     VITE_API_URL: https://socials.dataopslabs.com/api
     VITE_FRONTEND_URL: https://socials.dataopslabs.com
-    # Backend environment variables (will use IAM roles for AWS access)
-    AWS_DEFAULT_REGION: us-east-2
-    AWS_BEDROCK_REGION: us-east-1
-    AWS_S3_BUCKET: socials-aws-1
+    # Backend environment variables (using non-AWS prefixed names)
+    DEFAULT_REGION: us-east-2
+    BEDROCK_REGION: us-east-1
+    S3_BUCKET: socials-aws-1
     # Social media credentials (set these in Amplify console)
     LINKEDIN_CLIENT_ID: 86vkop6nen6kvi
