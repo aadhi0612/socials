@@ -5,6 +5,8 @@ provider:
   runtime: python3.9
   region: us-east-2
   stage: prod
+  timeout: 30
+  memorySize: 512
   environment:
     DEFAULT_REGION: us-east-2
     BEDROCK_REGION: us-east-1
@@ -16,28 +18,60 @@ provider:
     X_ACCESS_TOKEN_SECRET: ${env:X_ACCESS_TOKEN_SECRET}
     LINKEDIN_CLIENT_ID: ${env:LINKEDIN_CLIENT_ID}
     LINKEDIN_CLIENT_SECRET: ${env:LINKEDIN_CLIENT_SECRET}
-  iamRoleStatements:
-    - Effect: Allow
-      Action:
-        - bedrock:*
-        - s3:*
-        - dynamodb:*
-        - secretsmanager:GetSecretValue
-      Resource: "*"
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - bedrock:*
+            - s3:*
+            - dynamodb:*
+            - secretsmanager:GetSecretValue
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+          Resource: "*"
 
 functions:
   api:
     handler: lambda_handler.handler
     events:
-      - http:
+      - httpApi:
           path: /{proxy+}
           method: ANY
-          cors: true
-      - http:
+          cors:
+            allowOrigins:
+              - https://socials.dataopslabs.com
+              - http://localhost:5173
+            allowHeaders:
+              - Content-Type
+              - Authorization
+              - X-User-Id
+            allowMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+              - PATCH
+      - httpApi:
           path: /
           method: ANY
-          cors: true
-    timeout: 30
+          cors:
+            allowOrigins:
+              - https://socials.dataopslabs.com
+              - http://localhost:5173
+            allowHeaders:
+              - Content-Type
+              - Authorization
+              - X-User-Id
+            allowMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+              - PATCH
 
 plugins:
   - serverless-python-requirements
@@ -46,3 +80,7 @@ custom:
   pythonRequirements:
     dockerizePip: true
     slim: true
+    strip: false
+    noDeps: false
+    pipCmdExtraArgs:
+      - --no-cache-dir
