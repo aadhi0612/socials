@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, Body, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Body, status, Cookie, Header
 from app.schemas.user import UserOut, UserUpdate, UserListOut, UserCreate
 from app.services.dynamodb_service import get_user_by_id, list_users, update_user, get_user_item_by_id, get_user_item_by_email
 import bcrypt
@@ -86,7 +86,15 @@ def update_current_user(user_update: UserUpdate, current_user=Depends(get_curren
 # --- JWT Auth Dependency (move this up) ---
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="users/login")
 
-def get_current_user_jwt(token: str = Depends(oauth2_scheme)):
+def get_current_user_jwt(
+    token: str = Header(None, alias="Authorization"),
+    cookie_token: str = Cookie(None, alias="token")
+):
+    # Support 'Bearer <token>' in header
+    if token and token.startswith("Bearer "):
+        token = token.split(" ", 1)[1]
+    elif not token:
+        token = cookie_token
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id = payload.get("user_id")
@@ -94,7 +102,7 @@ def get_current_user_jwt(token: str = Depends(oauth2_scheme)):
             raise HTTPException(status_code=401, detail="Invalid token: no user_id")
         # Optionally, fetch user from DB here
         return {"user_id": user_id, "role": payload.get("role")}
-    except jwt.PyJWTError:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",

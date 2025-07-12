@@ -5,6 +5,8 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.api import user, content, ai, community, media
+from app.api.oauth import router as oauth_router
+from app.api.social_accounts import router as social_accounts_router
 
 # Load environment variables
 load_dotenv()
@@ -43,6 +45,8 @@ app.include_router(content.router)
 app.include_router(ai.router)
 app.include_router(community.router, prefix="/community", tags=["community"])
 app.include_router(media.router)
+app.include_router(oauth_router)
+app.include_router(social_accounts_router)
 
 @app.get("/")
 def read_root():
