@@ -3,6 +3,9 @@ import awsConfig from '../config/aws';
 
 export const API_BASE = awsConfig.apiUrl;
 
+// Debug logging
+console.log('👤 Users API - API_BASE:', API_BASE);
+
 export type LoginResult = { token: string; user_id: string };
 
 export async function getUser(id: string, token?: string) {

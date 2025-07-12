@@ -1,4 +1,6 @@
-const API_URL = import.meta.env.VITE_API_URL || 'https://wi6uxcbvs9.execute-api.us-east-2.amazonaws.com/prod';
+import awsConfig from '../config/aws';
+
+const API_URL = awsConfig.apiUrl;
 
 export const postToSocialMedia = async (postData) => {
   try {
