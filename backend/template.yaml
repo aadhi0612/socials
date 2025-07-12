@@ -55,8 +55,8 @@ Resources:
                 - s3:DeleteObject
                 - s3:ListBucket
               Resource:
-                - !Sub "arn:aws:s3:::socials-aws-1"
-                - !Sub "arn:aws:s3:::socials-aws-1/*"
+                - !Sub "arn:aws:s3:::socials-media-098493093308"
+                - !Sub "arn:aws:s3:::socials-media-098493093308/*"
             - Effect: Allow
               Action:
                 - bedrock:InvokeModel

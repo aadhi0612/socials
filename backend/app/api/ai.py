@@ -129,7 +129,7 @@ def generate_image(request: ImagePromptRequest):
         # Generate unique filename
         image_id = str(uuid.uuid4())
         s3_key = f"ai-generated/{image_id}.png"
-        bucket = os.getenv("AWS_S3_BUCKET", "socials-aws-1")
+        bucket = os.getenv("AWS_S3_BUCKET", "socials-media-098493093308")
         
         # Upload to S3
         s3.put_object(
