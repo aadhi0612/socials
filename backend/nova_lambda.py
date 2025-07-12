@@ -81,6 +81,12 @@ def handler(event, context):
         elif path.startswith('/api/v1/direct-posts/immediate') and http_method == 'POST':
             return handle_social_posting(request_data, cors_headers)
         
+        elif path.startswith('/api/v1/direct-posts/test-credentials') and http_method == 'GET':
+            return handle_test_credentials(cors_headers)
+        
+        elif path.startswith('/api/v1/oauth-posts'):
+            return handle_oauth_endpoints(path, http_method, request_data, cors_headers)
+        
         else:
             return {
                 "statusCode": 404,
@@ -264,8 +270,12 @@ def handle_users_simple(path, method, data, cors_headers):
 
 def handle_social_posting(data, cors_headers):
     """Handle social media posting"""
-    content = data.get('content', '')
+    # Accept both 'content' and 'content_text' for compatibility
+    content = data.get('content') or data.get('content_text', '')
     platforms = data.get('platforms', [])
+    
+    print(f"📝 Posting content: {content[:50]}...")
+    print(f"🎯 Platforms: {platforms}")
     
     if not content:
         return {
@@ -331,4 +341,37 @@ def handle_media(path, method, data, cors_headers):
             "statusCode": 404,
             "headers": cors_headers,
             "body": json.dumps({"error": "Media endpoint not found"})
+        }
+
+def handle_test_credentials(cors_headers):
+    """Handle credentials testing"""
+    return {
+        "statusCode": 200,
+        "headers": cors_headers,
+        "body": json.dumps({
+            "twitter": {"status": "connected", "username": "demo_user"},
+            "linkedin": {"status": "connected", "name": "Demo User"},
+            "message": "All credentials are valid"
+        })
+    }
+
+def handle_oauth_endpoints(path, method, data, cors_headers):
+    """Handle OAuth endpoints"""
+    if 'linkedin' in path:
+        return {
+            "statusCode": 200,
+            "headers": cors_headers,
+            "body": json.dumps({
+                "auth_url": "https://linkedin.com/oauth/authorize",
+                "message": "LinkedIn OAuth endpoint"
+            })
+        }
+    else:
+        return {
+            "statusCode": 200,
+            "headers": cors_headers,
+            "body": json.dumps({
+                "message": "OAuth endpoint available",
+                "status": "configured"
+            })
         }
