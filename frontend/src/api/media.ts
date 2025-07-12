@@ -1,6 +1,6 @@
 import { MediaOut, MediaCreate } from '../types';
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export async function fetchMedia(token: string): Promise<MediaOut[]> {
   const res = await fetch(`${API_BASE}/media/`, {
@@ -41,7 +41,16 @@ export async function getPresignedUploadUrl(postId: string, filename: string, fi
   return res.json();
 }
 
-export async function generateAIImage(prompt: string): Promise<{ image_url?: string; s3_url?: string; name?: string }> {
+export async function generateAIImage(prompt: string): Promise<{ 
+  id?: string; 
+  url?: string; 
+  name?: string; 
+  prompt?: string; 
+  description?: string; 
+  type?: string; 
+  ai_generated?: boolean; 
+  message?: string; 
+}> {
   const res = await fetch(`${API_BASE}/ai/generate-image`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

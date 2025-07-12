@@ -111,26 +111,24 @@ const MediaLibrary: React.FC = () => {
     setAiError(null);
     try {
       const data = await generateAIImage(aiPrompt);
-      const aiImg = data.image_url || data.s3_url;
-      const aiName = data.name || 'AI Image';
-      if (!aiImg) {
-        setAiError('AI did not return an image.');
+      
+      // The backend now returns the complete media object
+      if (!data.url) {
+        setAiError('AI did not return an image URL.');
         setAiLoading(false);
         return;
       }
-      let s3Url = aiImg;
-      if (aiImg.startsWith('data:')) {
-        // Upload to S3
-        const blob = await (await fetch(aiImg)).blob();
-        const { url, s3_key } = await getPresignedUploadUrl(sessionId, `ai-image-${Date.now()}.png`, blob.type);
-        await fetch(url, {
-          method: 'PUT',
-          headers: { 'Content-Type': blob.type },
-          body: blob
-        });
-        s3Url = `https://${bucket}.s3.amazonaws.com/${s3_key}`;
-      }
-      const newMedia = await addMedia({ url: s3Url, type: 'image', name: aiName, ai_generated: true }, token);
+      
+      // Create media object with all the data from backend
+      const newMedia = await addMedia({
+        url: data.url,
+        type: data.type || 'image',
+        name: data.name || 'AI Generated Image',
+        description: data.description || aiPrompt,
+        prompt: data.prompt || aiPrompt,
+        ai_generated: data.ai_generated || true
+      }, token);
+      
       setMedia([newMedia, ...media]);
       setAiModalOpen(false);
       setAiPrompt('');

@@ -125,14 +125,19 @@ export interface MediaOut {
   url: string;
   type: string;
   name?: string;
+  description?: string;  // For storing AI prompts or descriptions
+  prompt?: string;  // Specifically for AI-generated content prompts
   ai_generated?: boolean;
   created_at?: string;
+  tags?: string[];
 }
 
 export interface MediaCreate {
   url: string;
   type: string;
   name?: string;
+  description?: string;  // For storing AI prompts or descriptions
+  prompt?: string;  // Specifically for AI-generated content prompts
   ai_generated?: boolean;
   tags?: string[];
 }
