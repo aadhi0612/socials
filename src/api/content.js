@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:8000';
+const API_BASE = 'https://wi6uxcbvs9.execute-api.us-east-2.amazonaws.com/prod';
 export async function createContent(content) {
     const res = await fetch(`${API_BASE}/content/`, {
         method: 'POST',

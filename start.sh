@@ -82,7 +82,7 @@ FRONTEND_PID=$!
 
 # Display status
 echo -e "\n${GREEN}✅ Both servers are running!${NC}"
-echo -e "${BLUE}📱 Frontend: https://socials.dataopslabs.com${NC}"
+echo -e "${BLUE}📱 Frontend: http://localhost:3000${NC}"
 echo -e "${BLUE}🔧 Backend API: http://localhost:8000${NC}"
 echo -e "${BLUE}📚 API Docs: http://localhost:8000/docs${NC}"
 echo -e "\n${YELLOW}Press Ctrl+C to stop both servers${NC}"
