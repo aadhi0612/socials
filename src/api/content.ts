@@ -3,9 +3,13 @@ import { ContentCreate, ContentUpdate, ContentOut } from '../types';
 const API_BASE = 'http://localhost:8000';
 
 export async function createContent(content: ContentCreate): Promise<ContentOut> {
+  const token = sessionStorage.getItem('token');
   const res = await fetch(`${API_BASE}/content/`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    },
     body: JSON.stringify(content)
   });
   if (!res.ok) throw new Error('Failed to create content');

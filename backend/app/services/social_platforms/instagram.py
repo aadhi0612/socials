@@ -28,9 +28,10 @@ class InstagramPlatform(BaseSocialPlatform):
             creds = secrets_manager.get_platform_credentials("instagram")
             self.app_id = creds["app_id"]
             self.app_secret = creds["app_secret"]
+            logger.info("Instagram credentials loaded from AWS Secrets Manager")
         except Exception as e:
-            logger.warning(f"Could not load Instagram credentials from AWS: {e}")
-            # Fallback to environment variables - Instagram credentials would need to be added
+            logger.debug(f"Using Instagram credentials from environment variables")
+            # Fallback to environment variables
             self.app_id = os.getenv("INSTAGRAM_APP_ID")
             self.app_secret = os.getenv("INSTAGRAM_APP_SECRET")
     

@@ -5,6 +5,7 @@ export interface User {
   role: 'Admin' | 'Editor' | 'Viewer';
   avatar?: string;
   lastActive?: Date;
+  profile_pic_url?: string;
 }
 
 export interface SocialPost {
@@ -23,7 +24,7 @@ export interface SocialPost {
 
 export interface Platform {
   id: string;
-  name: 'LinkedIn' | 'Instagram' | 'Twitter' | 'Facebook' | 'TikTok';
+  name: 'LinkedIn' | 'Instagram' | 'Twitter' | 'Facebook' ;
   connected: boolean;
   followers: number;
   icon: string;
@@ -90,7 +91,6 @@ export type Theme = 'light' | 'dark';
 export interface ContentCreate {
   title: string;
   body: string;
-  author_id: string;
   media?: string[];
   status?: string;
   platforms?: string[];
@@ -119,13 +119,20 @@ export interface ContentOut {
   scheduled_for?: string;
 }
 
-// Dashboard-specific type for posts grouped by community and platform
-export interface DashboardPost {
+export interface MediaOut {
   id: string;
-  community: string;
-  platforms: {
-    linkedin?: { images: string[]; caption: string };
-    twitter?: { images: string[]; caption: string };
-    instagram?: { images: string[]; caption: string };
-  };
+  user_id: string;
+  url: string;
+  type: string;
+  name?: string;
+  ai_generated?: boolean;
+  created_at?: string;
+}
+
+export interface MediaCreate {
+  url: string;
+  type: string;
+  name?: string;
+  ai_generated?: boolean;
+  tags?: string[];
 }

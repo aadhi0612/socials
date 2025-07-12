@@ -28,6 +28,23 @@ SECRET_KEY = "social-media-secret-key"  # Use a secure, random key in production
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
+# JWT Auth Dependency
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="users/login")
+
+def get_current_user_jwt(token: str = Depends(oauth2_scheme)):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("user_id")
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="Invalid token: no user_id")
+        # Optionally, fetch user from DB here
+        return {"user_id": user_id, "role": payload.get("role")}
+    except jwt.PyJWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+        )
+
 def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode = data.copy()
     expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
@@ -70,35 +87,18 @@ def login(email: str = Body(...), password: str = Body(...)):
     }
 
 @router.get("/me", response_model=UserOut)
-def read_current_user(current_user=Depends(get_current_user)):
+def read_current_user(current_user=Depends(get_current_user_jwt)):
     user = get_user_by_id(current_user["user_id"])
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
 @router.put("/me", response_model=UserOut)
-def update_current_user(user_update: UserUpdate, current_user=Depends(get_current_user)):
+def update_current_user(user_update: UserUpdate, current_user=Depends(get_current_user_jwt)):
     user = update_user(current_user["user_id"], user_update)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
-
-# --- JWT Auth Dependency (move this up) ---
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="users/login")
-
-def get_current_user_jwt(token: str = Depends(oauth2_scheme)):
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id = payload.get("user_id")
-        if user_id is None:
-            raise HTTPException(status_code=401, detail="Invalid token: no user_id")
-        # Optionally, fetch user from DB here
-        return {"user_id": user_id, "role": payload.get("role")}
-    except jwt.PyJWTError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-        )
 
 @router.put("/me/profile-pic", response_model=UserOut)
 def update_profile_pic(profile_pic_url: str = Body(..., embed=True), current_user=Depends(get_current_user_jwt)):

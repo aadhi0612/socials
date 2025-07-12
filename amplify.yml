@@ -1,0 +1,43 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - npm ci
+    build:
+      commands:
+        - npm run build
+  artifacts:
+    baseDirectory: dist
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - node_modules/**/*
+backend:
+  phases:
+    preBuild:
+      commands:
+        - cd backend
+        - pip install -r requirements.txt
+    build:
+      commands:
+        - cd backend
+        - echo "Backend prepared for serverless deployment"
+  artifacts:
+    baseDirectory: backend
+    files:
+      - '**/*'
+environment:
+  variables:
+    # Frontend environment variables
+    VITE_AWS_S3_BUCKET: socials-aws-1
+    REACT_APP_AWS_REGION: us-east-2
+    VITE_API_URL: https://socials.dataopslabs.com/api
+    VITE_FRONTEND_URL: https://socials.dataopslabs.com
+    # Backend environment variables (will use IAM roles for AWS access)
+    AWS_DEFAULT_REGION: us-east-2
+    AWS_BEDROCK_REGION: us-east-1
+    AWS_S3_BUCKET: socials-aws-1
+    # Social media credentials (set these in Amplify console)
+    LINKEDIN_CLIENT_ID: 86vkop6nen6kvi

@@ -1,139 +1,192 @@
-# Socials Application
+# 🚀 Socials - AI-Powered Social Media Management Platform
 
-A full-stack social media application with React frontend and FastAPI backend.
+A full-stack social media application with React frontend and FastAPI backend, featuring AI content generation and multi-platform posting.
 
-## Project Structure
+## ✨ Features
+
+- 🤖 **AI Content Generation** - Powered by Amazon Bedrock
+- 📱 **Multi-Platform Posting** - Twitter/X and LinkedIn integration
+- 🔐 **Secure Authentication** - JWT-based user management
+- 📊 **Media Management** - S3-powered image storage
+- 🎨 **Modern UI** - React + TypeScript + Tailwind CSS
+- ☁️ **Serverless Ready** - AWS Amplify deployment
+
+## 🏗️ Architecture
 
 ```
-socials/
-├── frontend/          # React + Vite frontend
-│   ├── src/
-│   ├── package.json
-│   └── .env
-├── backend/           # FastAPI backend
-│   ├── app/
-│   ├── requirements.txt
-│   └── .env
-├── start.sh          # Script to start both servers
-└── README.md
+Frontend (React + Vite)     Backend (FastAPI)        AWS Services
+├── Content Creation    →   ├── AI Generation    →   ├── Bedrock (AI)
+├── Media Upload        →   ├── Social Posting   →   ├── S3 (Storage)
+├── User Management     →   ├── Authentication   →   ├── DynamoDB (Database)
+└── Platform Integration→   └── OAuth Flow       →   └── Secrets Manager
 ```
 
-## Prerequisites
+## 🚀 Quick Start
 
-- Python 3.8+
-- Node.js 16+
-- npm or yarn
-
-## Quick Start
-
-1. **Clone and navigate to the project:**
-   ```bash
-   cd socials
-   ```
-
-2. **Start both servers:**
-   ```bash
-   ./start.sh
-   ```
-
-This will:
-- Create a Python virtual environment (if it doesn't exist)
-- Install backend dependencies
-- Install frontend dependencies
-- Start the FastAPI backend on `http://localhost:8000`
-- Start the React frontend on `http://localhost:5173`
-
-## Manual Setup
-
-### Backend Setup
-
-1. Navigate to backend directory:
-   ```bash
-   cd backend
-   ```
-
-2. Create virtual environment:
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate
-   ```
-
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. Start the server:
-   ```bash
-   uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-   ```
-
-### Frontend Setup
-
-1. Navigate to frontend directory:
-   ```bash
-   cd frontend
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Start the development server:
-   ```bash
-   npm run dev
-   ```
-
-## Environment Variables
-
-### Frontend (.env)
-```
-VITE_AWS_S3_BUCKET=socials-aws-1
-REACT_APP_AWS_REGION=us-east-2
-VITE_API_URL=http://localhost:8000
+### **Option 1: One-Command Start**
+```bash
+./start.sh
 ```
 
-### Backend (.env)
+### **Option 2: Manual Setup**
+
+**Backend:**
+```bash
+cd backend
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
+
+**Frontend:**
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+## 🌐 Access Points
+
+- **Frontend**: http://localhost:5173
+- **Backend API**: http://localhost:8000
+- **API Documentation**: http://localhost:8000/docs
+
+## 🔧 Configuration
+
+### **Environment Variables**
+
+**Backend (.env):**
+```env
+# AWS Configuration
 AWS_ACCESS_KEY_ID=your_access_key
 AWS_SECRET_ACCESS_KEY=your_secret_key
 AWS_DEFAULT_REGION=us-east-2
-AWS_BEDROCK_REGION=us-east-1
 AWS_S3_BUCKET=socials-aws-1
+
+# Social Media APIs
+X_API_KEY=your_twitter_api_key
+X_API_KEY_SECRET=your_twitter_secret
+X_ACCESS_TOKEN=your_twitter_token
+X_ACCESS_TOKEN_SECRET=your_twitter_token_secret
+LINKEDIN_CLIENT_ID=your_linkedin_client_id
+LINKEDIN_CLIENT_SECRET=your_linkedin_secret
 ```
 
-## API Documentation
+**Frontend (.env):**
+```env
+VITE_AWS_S3_BUCKET=socials-aws-1
+VITE_API_URL=http://localhost:8000
+REACT_APP_AWS_REGION=us-east-2
+```
 
-Once the backend is running, you can access:
-- API Documentation: `http://localhost:8000/docs`
-- Alternative API Docs: `http://localhost:8000/redoc`
+## 📱 Social Media Integration
 
-## CORS Configuration
+### **Twitter/X** ✅
+- **Status**: Fully Working
+- **Method**: Direct API posting
+- **Features**: Text posts, media upload, real-time posting
 
-The backend is configured to allow requests from:
-- `http://localhost:5173` (Vite dev server)
-- `http://localhost:3000` (React dev server)
-- `http://127.0.0.1:5173`
-- `http://127.0.0.1:3000`
+### **LinkedIn** 🔗
+- **Status**: OAuth Ready
+- **Method**: OAuth 2.0 flow
+- **Setup Required**: Add redirect URI to LinkedIn app
+- **Redirect URI**: `https://socials.dataopslabs.com/api/v1/oauth-posts/auth/linkedin/callback`
 
-## Stopping the Application
+## 🔐 LinkedIn OAuth Setup
 
-Press `Ctrl+C` in the terminal where `start.sh` is running to stop both servers.
+1. **Go to**: https://www.linkedin.com/developers/apps
+2. **Find your app** with Client ID: `86vkop6nen6kvi`
+3. **Add redirect URI**: `https://socials.dataopslabs.com/api/v1/oauth-posts/auth/linkedin/callback`
+4. **Enable scopes**: `r_liteprofile`, `w_member_social`
 
-## Troubleshooting
+## 🚀 Production Deployment
 
-### CORS Issues
-- Ensure the frontend is running on the allowed origins
-- Check that the backend CORS middleware is properly configured
-- Verify the API URL in frontend environment variables
+### **AWS Amplify**
+```bash
+# 1. Connect repository to Amplify
+# 2. Use amplify.yml configuration
+# 3. Set environment variables
+# 4. Deploy automatically
+```
 
-### Port Conflicts
-- Backend runs on port 8000
-- Frontend runs on port 5173
-- Make sure these ports are available
+### **Environment URLs**
+- **Production**: https://socials.dataopslabs.com
+- **API**: https://api.socials.dataopslabs.com
 
-### Environment Variables
-- Ensure `.env` files are in the correct directories
-- Check that environment variables are properly loaded
-- Verify AWS credentials and permissions
+## 📁 Project Structure
+
+```
+socials/
+├── frontend/              # React + Vite frontend
+│   ├── src/
+│   │   ├── components/    # Reusable UI components
+│   │   ├── pages/         # Application pages
+│   │   ├── api/           # API integration
+│   │   └── config/        # Configuration files
+│   ├── package.json
+│   └── .env
+├── backend/               # FastAPI backend
+│   ├── app/
+│   │   ├── api/           # API endpoints
+│   │   ├── services/      # Business logic
+│   │   ├── routers/       # Route handlers
+│   │   └── schemas/       # Data models
+│   ├── requirements.txt
+│   └── .env
+├── amplify.yml            # AWS Amplify configuration
+├── start.sh               # Development startup script
+└── README.md
+```
+
+## 🛠️ Development
+
+### **Adding New Features**
+1. **Backend**: Add endpoints in `app/api/` or `app/routers/`
+2. **Frontend**: Create components in `src/components/` or pages in `src/pages/`
+3. **Database**: Update schemas in `app/schemas/`
+4. **API Integration**: Add functions in `src/api/`
+
+### **Testing**
+```bash
+# Backend
+cd backend && python -m pytest
+
+# Frontend
+cd frontend && npm test
+```
+
+## 🔒 Security
+
+- ✅ JWT authentication
+- ✅ AWS IAM roles
+- ✅ Environment variable protection
+- ✅ CORS configuration
+- ✅ Input validation
+- ✅ Secure credential storage
+
+## 📊 Current Status
+
+- **Twitter Integration**: 🟢 Production Ready
+- **LinkedIn Integration**: 🟡 OAuth Setup Required
+- **AI Content Generation**: 🟢 Working
+- **Media Management**: 🟢 Working
+- **User Authentication**: 🟢 Working
+- **AWS Deployment**: 🟢 Ready
+
+## 🆘 Troubleshooting
+
+### **Common Issues**
+1. **CORS errors**: Check API URL in frontend .env
+2. **AWS credentials**: Verify access keys and permissions
+3. **LinkedIn OAuth**: Ensure redirect URI is configured
+4. **Port conflicts**: Backend (8000), Frontend (5173)
+
+### **Support**
+- Check API documentation: http://localhost:8000/docs
+- Review logs in browser console
+- Verify environment variables
+
+---
+
+**Built with ❤️ using React, FastAPI, and AWS**

@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.api import user, content, ai, community, media
 from .database import create_tables
-from .routers import social_auth, social_posts
+from .routers import social_auth, social_posts, direct_social_posts, oauth_social_posts
 
 # Load environment variables
 load_dotenv()
@@ -27,6 +27,9 @@ allowed_origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "http://192.168.29.208:5173",  # Your local network frontend
+    "http://localhost:5174",       # Alternative port
+    "http://127.0.0.1:5174",
+    "http://192.168.29.208:5174",  # Your local network frontend on port 5174
     "http://localhost:3000",
     "http://127.0.0.1:3000"
 ]
@@ -74,6 +77,14 @@ app.include_router(media.router)
 # Include new social media routers
 app.include_router(social_auth.router, prefix="/api/v1")
 app.include_router(social_posts.router, prefix="/api/v1")
+
+# Include direct posting router (no OAuth required)
+from .routers import direct_social_posts
+app.include_router(direct_social_posts.router, prefix="/api/v1")
+
+# Include OAuth-based posting router (with proper authentication)
+from .routers import oauth_social_posts
+app.include_router(oauth_social_posts.router, prefix="/api/v1")
 
 @app.on_event("startup")
 async def startup_event():

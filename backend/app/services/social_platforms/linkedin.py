@@ -28,8 +28,9 @@ class LinkedInPlatform(BaseSocialPlatform):
             creds = secrets_manager.get_platform_credentials("linkedin")
             self.client_id = creds["client_id"]
             self.client_secret = creds["client_secret"]
+            logger.info("LinkedIn credentials loaded from AWS Secrets Manager")
         except Exception as e:
-            logger.warning(f"Could not load LinkedIn credentials from AWS: {e}")
+            logger.debug(f"Using LinkedIn credentials from environment variables")
             # Fallback to environment variables or direct values
             self.client_id = os.getenv("LINKEDIN_CLIENT_ID", "86vkop6nen6kvi")
             self.client_secret = os.getenv("LINKEDIN_CLIENT_SECRET", "WPL_AP1.AL44Zi3CwnFkpAz2.1uCXAw==")

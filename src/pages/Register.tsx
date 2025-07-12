@@ -52,7 +52,7 @@ const Register: React.FC = () => {
     setError(null);
     setLoading(true);
 
-    let profilePicUrl = '';
+    let profilePicUrl: string | undefined = undefined;
     let userId = '';
     try {
       // 1. Always get a user_id and presigned URL from backend
@@ -72,17 +72,17 @@ const Register: React.FC = () => {
           body: profilePic,
         });
         // 3. Construct the S3 URL
-        const bucket = import.meta.env.VITE_AWS_S3_BUCKET || 'your-bucket-name';
-        const region = import.meta.env.VITE_AWS_REGION || 'ap-south-1';
+        const bucket = import.meta.env.VITE_AWS_S3_BUCKET;
+        const region = import.meta.env.VITE_AWS_REGION;
         profilePicUrl = `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
       }
 
-      // 4. Register user with all fields, including user_id and profile_pic_url
+      // 4. Register user with all fields, including user_id and profile_pic_url if present
       const userData: RegisterUser & { id?: string } = {
         ...form,
         aws_community: awsCommunity,
-        profile_pic_url: profilePicUrl,
         id: userId,
+        ...(profilePicUrl ? { profile_pic_url: profilePicUrl } : {})
       };
       console.log("Registering user with data:", userData);
       await register(userData);
@@ -145,6 +145,15 @@ const Register: React.FC = () => {
         <button type="submit" disabled={loading} className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg mt-6 transition-colors">
           {loading ? 'Registering...' : 'Register'}
         </button>
+        <div className="text-center mt-4">
+          <button
+            type="button"
+            className="text-purple-400 hover:text-purple-200 underline text-sm"
+            onClick={() => navigate('/login')}
+          >
+            Back to Login
+          </button>
+        </div>
       </form>
     </div>
   );

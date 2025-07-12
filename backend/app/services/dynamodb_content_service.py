@@ -6,16 +6,13 @@ from app.schemas.content import ContentCreate, ContentUpdate, ContentOut
 from datetime import datetime
 import uuid
 from boto3.dynamodb.conditions import Attr
+from .aws_config import aws_config
 
 load_dotenv()
 
 def get_dynamodb_resource():
-    return boto3.resource(
-        "dynamodb",
-        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-        region_name=os.getenv("AWS_DEFAULT_REGION"),
-    )
+    # Use the enhanced AWS config with session token support
+    return aws_config.get_dynamodb_resource()
 
 dynamodb = get_dynamodb_resource()
 table = dynamodb.Table('content')

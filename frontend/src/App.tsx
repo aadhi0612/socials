@@ -12,6 +12,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import Register from './pages/Register';
 import Login from './pages/Login';
 import Main from './pages/Main';
+import SocialMediaTest from './pages/SocialMediaTest';
 
 import { Link } from 'react-router-dom';
 
@@ -55,6 +56,7 @@ const AppContent: React.FC = () => {
             <Route path="/media" element={<MediaLibrary />} />
             <Route path="/campaigns" element={<CampaignManager />} />
             <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/social-test" element={<SocialMediaTest />} />
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Navigate to="/dashboard" replace />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />

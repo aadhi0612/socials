@@ -14,3 +14,10 @@ requests
 requests-oauthlib
 APScheduler
 python-multipart
+
+# Serverless deployment dependencies
+mangum
+awslambdaric
+
+# Additional AWS SDK packages for better type hints
+boto3-stubs[essential]

@@ -3,17 +3,14 @@ import os
 from dotenv import load_dotenv
 from typing import Optional, List
 from app.schemas.user import UserOut, UserUpdate
+from .aws_config import aws_config
 
 # Load environment variables from .env
 load_dotenv()
 
 def get_dynamodb_resource():
-    return boto3.resource(
-        "dynamodb",
-        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-        region_name=os.getenv("AWS_DEFAULT_REGION"),
-    )
+    # Use the enhanced AWS config with session token support
+    return aws_config.get_dynamodb_resource()
 
 dynamodb = get_dynamodb_resource()
 table = dynamodb.Table('users')  # Make sure your DynamoDB table is named 'users'

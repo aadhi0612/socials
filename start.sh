@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Colors for output
-RED='\033[0;31m'
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 echo -e "${BLUE}🚀 Starting Socials Application...${NC}"
@@ -14,7 +14,7 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
-# Check if required commands exist
+# Check dependencies
 if ! command_exists python3; then
     echo -e "${RED}❌ Python3 is not installed${NC}"
     exit 1
@@ -25,7 +25,7 @@ if ! command_exists npm; then
     exit 1
 fi
 
-# Function to kill processes on script exit
+# Cleanup function
 cleanup() {
     echo -e "\n${YELLOW}🛑 Shutting down servers...${NC}"
     if [ ! -z "$BACKEND_PID" ]; then
@@ -46,40 +46,38 @@ trap cleanup SIGINT SIGTERM
 echo -e "${BLUE}📦 Starting Backend Server...${NC}"
 cd backend
 
-# Check if virtual environment exists, create if not
+# Create virtual environment if it doesn't exist
 if [ ! -d "venv" ]; then
     echo -e "${YELLOW}🔧 Creating Python virtual environment...${NC}"
     python3 -m venv venv
 fi
 
-# Activate virtual environment
+# Activate virtual environment and install dependencies
 source venv/bin/activate
-
-# Install backend dependencies
 echo -e "${YELLOW}📥 Installing backend dependencies...${NC}"
-pip install -r requirements.txt
+pip install -r requirements.txt > /dev/null 2>&1
 
 # Start backend server
 echo -e "${GREEN}🚀 Starting FastAPI server on http://localhost:8000${NC}"
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload &
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload > /dev/null 2>&1 &
 BACKEND_PID=$!
 
-# Wait a moment for backend to start
+# Wait for backend to start
 sleep 3
 
 # Start Frontend
 echo -e "${BLUE}🎨 Starting Frontend Server...${NC}"
 cd ../frontend
 
-# Install frontend dependencies if node_modules doesn't exist
+# Install frontend dependencies if needed
 if [ ! -d "node_modules" ]; then
     echo -e "${YELLOW}📥 Installing frontend dependencies...${NC}"
-    npm install
+    npm install > /dev/null 2>&1
 fi
 
 # Start frontend server
 echo -e "${GREEN}🚀 Starting Vite dev server on http://localhost:5173${NC}"
-npm run dev &
+npm run dev > /dev/null 2>&1 &
 FRONTEND_PID=$!
 
 # Display status
@@ -89,5 +87,5 @@ echo -e "${BLUE}🔧 Backend API: http://localhost:8000${NC}"
 echo -e "${BLUE}📚 API Docs: http://localhost:8000/docs${NC}"
 echo -e "\n${YELLOW}Press Ctrl+C to stop both servers${NC}"
 
-# Wait for both processes
+# Wait for processes
 wait $BACKEND_PID $FRONTEND_PID

@@ -7,12 +7,12 @@ export const mockPlatforms = [
 export const mockPosts = [
     {
         id: '1',
-        content: 'EY is proud to announce our latest sustainability initiative! 🌱 Our commitment to building a better working world includes reducing carbon emissions by 40% by 2025. #Sustainability #EY #BetterWorkingWorld',
+        content: 'Excited to share our latest sustainability initiative! 🌱 Our commitment to building a better future includes reducing carbon emissions by 40% by 2025. #Sustainability #GreenTech #BetterFuture',
         platforms: [mockPlatforms[0], mockPlatforms[1]],
         status: 'published',
         publishedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
         media: [],
-        campaign: 'EY Sustainability 2024',
+        campaign: 'Sustainability Initiative 2024',
         metrics: {
             likes: 1234,
             comments: 89,
@@ -26,23 +26,23 @@ export const mockPosts = [
     },
     {
         id: '2',
-        content: 'Join EY at the Global Tax Summit 2024! 📊 Discover how digital transformation is reshaping tax compliance and strategy. Early bird registration now open. #EYTax #DigitalTransformation #TaxSummit2024',
+        content: 'Join us at the Global Tech Summit 2024! 📊 Discover how digital transformation is reshaping business strategy and innovation. Early bird registration now open. #TechSummit #DigitalTransformation #Innovation2024',
         platforms: [mockPlatforms[0], mockPlatforms[2]],
         status: 'scheduled',
         scheduledFor: new Date(Date.now() + 4 * 60 * 60 * 1000),
         media: [{
                 id: 'm1',
-                name: 'ey-tax-summit-banner.jpg',
+                name: 'tech-summit-banner.jpg',
                 url: 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=800',
                 type: 'image',
                 size: 245760,
                 dimensions: { width: 800, height: 600 },
-                tags: ['event', 'tax', 'summit', 'EY'],
-                campaign: 'EY Tax Summit 2024',
+                tags: ['event', 'tech', 'summit', 'innovation'],
+                campaign: 'Tech Summit 2024',
                 createdAt: new Date(),
                 aiGenerated: false
             }],
-        campaign: 'EY Tax Summit 2024',
+        campaign: 'Tech Summit 2024',
         metrics: {
             likes: 0,
             comments: 0,
@@ -56,7 +56,7 @@ export const mockPosts = [
     },
     {
         id: '3',
-        content: 'Behind the scenes at EY\'s Innovation Lab! 🚀 Our teams are developing cutting-edge solutions in AI, blockchain, and quantum computing to serve our clients better. #EYInnovation #Technology #AI',
+        content: 'Behind the scenes at our Innovation Lab! 🚀 Our teams are developing cutting-edge solutions in AI, blockchain, and quantum computing to serve our clients better. #Innovation #Technology #AI',
         platforms: [mockPlatforms[2]],
         status: 'draft',
         media: [],
@@ -75,48 +75,48 @@ export const mockPosts = [
 export const mockMediaAssets = [
     {
         id: 'm1',
-        name: 'ey-tax-summit-banner.jpg',
+        name: 'tech-summit-banner.jpg',
         url: 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=800',
         type: 'image',
         size: 245760,
         dimensions: { width: 800, height: 600 },
-        tags: ['event', 'tax', 'summit', 'EY', 'professional'],
-        campaign: 'EY Tax Summit 2024',
+        tags: ['event', 'tech', 'summit', 'innovation', 'professional'],
+        campaign: 'Tech Summit 2024',
         createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
         aiGenerated: false
     },
     {
         id: 'm2',
-        name: 'ey-innovation-lab.mp4',
+        name: 'innovation-lab.mp4',
         url: 'https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=800',
         type: 'video',
         size: 15728640,
         dimensions: { width: 1920, height: 1080 },
-        tags: ['innovation', 'technology', 'EY', 'research', 'AI'],
-        campaign: 'EY Innovation Showcase',
+        tags: ['innovation', 'technology', 'research', 'AI'],
+        campaign: 'Innovation Showcase',
         createdAt: new Date(Date.now() - 48 * 60 * 60 * 1000),
         aiGenerated: false
     },
     {
         id: 'm3',
-        name: 'ey-sustainability-infographic.jpg',
+        name: 'sustainability-infographic.jpg',
         url: 'https://images.pexels.com/photos/8386440/pexels-photo-8386440.jpeg?auto=compress&cs=tinysrgb&w=800',
         type: 'image',
         size: 178432,
         dimensions: { width: 1024, height: 768 },
-        tags: ['sustainability', 'environment', 'EY', 'green', 'climate'],
-        campaign: 'EY Sustainability 2024',
+        tags: ['sustainability', 'environment', 'green', 'climate'],
+        campaign: 'Sustainability Initiative 2024',
         createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000),
         aiGenerated: true
     },
     {
         id: 'm4',
-        name: 'ey-team-collaboration.jpg',
+        name: 'team-collaboration.jpg',
         url: 'https://images.pexels.com/photos/3183197/pexels-photo-3183197.jpeg?auto=compress&cs=tinysrgb&w=800',
         type: 'image',
         size: 298736,
         dimensions: { width: 1200, height: 800 },
-        tags: ['team', 'collaboration', 'EY', 'workplace', 'diversity'],
+        tags: ['team', 'collaboration', 'workplace', 'diversity'],
         createdAt: new Date(Date.now() - 72 * 60 * 60 * 1000),
         aiGenerated: false
     }
@@ -124,8 +124,8 @@ export const mockMediaAssets = [
 export const mockCampaigns = [
     {
         id: '1',
-        name: 'EY Sustainability 2024',
-        description: 'Promoting EY\'s commitment to environmental sustainability and carbon neutrality goals',
+        name: 'Sustainability Initiative 2024',
+        description: 'Promoting our commitment to environmental sustainability and carbon neutrality goals',
         startDate: new Date(2024, 9, 1),
         endDate: new Date(2024, 11, 31),
         status: 'active',
@@ -145,15 +145,15 @@ export const mockCampaigns = [
     },
     {
         id: '2',
-        name: 'EY Tax Summit 2024',
-        description: 'Event promotion and thought leadership for EY\'s annual tax summit',
+        name: 'Tech Summit 2024',
+        description: 'Event promotion and thought leadership for our annual technology summit',
         startDate: new Date(2024, 10, 1),
         endDate: new Date(2024, 11, 15),
         status: 'active',
         goals: [
             { type: 'reach', target: 200000, current: 128000 },
             { type: 'engagement', target: 12000, current: 8500 },
-            { type: 'conversions', target: 2000, target: 1250 }
+            { type: 'conversions', target: 2000, current: 1250 }
         ],
         posts: ['2'],
         assets: ['m1'],
@@ -166,8 +166,8 @@ export const mockCampaigns = [
     },
     {
         id: '3',
-        name: 'EY Innovation Showcase',
-        description: 'Highlighting EY\'s technological innovations and digital transformation capabilities',
+        name: 'Innovation Showcase',
+        description: 'Highlighting our technological innovations and digital transformation capabilities',
         startDate: new Date(2024, 8, 15),
         endDate: new Date(2024, 10, 30),
         status: 'completed',
@@ -191,9 +191,9 @@ export const defaultAISettings = {
     maxTokens: 1000,
     autoMode: false,
     promptTemplates: [
-        'Create an engaging LinkedIn post about EY\'s {topic} expertise',
-        'Write a Twitter thread about EY\'s perspective on {topic}',
-        'Generate an Instagram caption showcasing EY\'s {topic} work',
-        'Create professional content about EY\'s {topic} services'
+        'Create an engaging LinkedIn post about our {topic} expertise',
+        'Write a Twitter thread about our perspective on {topic}',
+        'Generate an Instagram caption showcasing our {topic} work',
+        'Create professional content about our {topic} services'
     ]
 };

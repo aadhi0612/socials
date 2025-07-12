@@ -12,13 +12,16 @@ import {
   Send,
   RefreshCw,
   X,
-  Grid
+  Grid,
+  Share2
 } from 'lucide-react';
 import Card from '../components/UI/Card';
 import Button from '../components/UI/Button';
 import Badge from '../components/UI/Badge';
 import { mockPlatforms } from '../data/mockData';
 import { createContent } from '../api/content';
+import { postToSocialMedia, testSocialCredentials } from '../api/socialPosts';
+import { initiateOAuth, postToSocialMediaOAuth, getConnectedAccounts, disconnectAccount, testLinkedInConnection } from '../api/oauthSocialPosts';
 import { useAuth } from '../contexts/AuthContext';
 import { v4 as uuidv4 } from 'uuid';
 import { useNavigate } from 'react-router-dom';
@@ -38,12 +41,19 @@ const ContentCreation: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [successType, setSuccessType] = useState<'published' | 'scheduled' | null>(null);
+  const [successType, setSuccessType] = useState<'published' | 'scheduled' | 'social' | null>(null);
   const [postId, setPostId] = useState<string>(uuidv4());
   const bucket = import.meta.env.VITE_AWS_S3_BUCKET as string;
   const navigate = useNavigate();
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  
+  // Social media posting states
+  const [isPostingToSocial, setIsPostingToSocial] = useState(false);
+  const [socialPostResults, setSocialPostResults] = useState<any>(null);
+  const [selectedSocialPlatforms, setSelectedSocialPlatforms] = useState<string[]>(['twitter']);
+  const [connectedAccounts, setConnectedAccounts] = useState<any[]>([]);
+  const [isLoadingAccounts, setIsLoadingAccounts] = useState(false);
 
   if (loading) {
     return <div>Loading...</div>;
@@ -105,39 +115,74 @@ const ContentCreation: React.FC = () => {
     }
   };
 
-  // Publish Now handler
+  // Publish Now handler - Updated to use direct API posting with credentials
   const handlePublishNow = async () => {
     if (!generatedContent.trim()) {
       setError('Please generate or write content before publishing');
       return;
     }
-    if (user && user.user_id) {
-      const selectedPlatformNames = mockPlatforms
-        .filter(p => selectedPlatforms.includes(p.id))
-        .map(p => p.name);
-      try {
-        const uploadedMedia = await uploadImagesToS3();
-        const libraryMedia = selectedMedia.map(m => m.url);
-        const media = [...uploadedMedia, ...libraryMedia];
-        await createContent({
-          title: contentSource === 'ai' ? inputValue : inputValue, // Use contentSource to determine title
-          body: generatedContent,
-          platforms: selectedPlatformNames,
-          scheduled_for: undefined,
-          status: 'published',
-          media,
-        });
+    
+    // Use the selected social platforms for posting
+    if (selectedSocialPlatforms.length === 0) {
+      setError('Please select at least one social media platform to publish to');
+      return;
+    }
+
+    setIsPostingToSocial(true);
+    setError(null);
+    setSocialPostResults(null);
+
+    try {
+      // Use direct posting API with configured credentials
+      const postData = {
+        content_text: generatedContent,
+        media_urls: selectedMedia.map(m => m.url),
+        media_type: selectedMedia.length > 0 ? 'image' : 'text',
+        platforms: selectedSocialPlatforms
+      };
+
+      const result = await postToSocialMedia(postData);
+      setSocialPostResults(result);
+      
+      if (result.success) {
         setSuccess(true);
-        setSuccessType('published');
+        setSuccessType('social');
         setError(null);
+        
+        // Also save to local content system if user is logged in
+        if (user && user.user_id) {
+          try {
+            const selectedPlatformNames = mockPlatforms
+              .filter(p => selectedPlatforms.includes(p.id))
+              .map(p => p.name);
+            const uploadedMedia = await uploadImagesToS3();
+            const libraryMedia = selectedMedia.map(m => m.url);
+            const media = [...uploadedMedia, ...libraryMedia];
+            
+            await createContent({
+              title: contentSource === 'ai' ? inputValue : inputValue,
+              body: generatedContent,
+              platforms: selectedPlatformNames,
+              scheduled_for: undefined,
+              status: 'published',
+              media,
+            });
+          } catch (contentErr) {
+            console.warn('Failed to save to content system:', contentErr);
+            // Don't show error since social posting succeeded
+          }
+        }
+        
         setTimeout(() => {
           navigate('/dashboard');
         }, 5000);
-      } catch (err: any) {
-        setError(err.message || 'Failed to publish content');
+      } else {
+        setError('Some posts failed. Check results below.');
       }
-    } else {
-      setError('You must be logged in to publish content.');
+    } catch (err: any) {
+      setError(err.message || 'Failed to publish to social media');
+    } finally {
+      setIsPostingToSocial(false);
     }
   };
 
@@ -175,6 +220,175 @@ const ContentCreation: React.FC = () => {
       setIsGenerating(false);
     }
   };
+
+  // Social Media Posting Handler - Updated to handle both direct and OAuth posting
+  const handlePostToSocialMedia = async () => {
+    if (!generatedContent.trim()) {
+      setError('Please generate or write content before posting to social media');
+      return;
+    }
+    
+    if (selectedSocialPlatforms.length === 0) {
+      setError('Please select at least one social media platform');
+      return;
+    }
+
+    // Check for LinkedIn without connection
+    if (selectedSocialPlatforms.includes('linkedin') && !isPlatformConnected('linkedin')) {
+      const confirmConnect = window.confirm(
+        'LinkedIn is not connected. Would you like to connect your LinkedIn account now?'
+      );
+      if (confirmConnect) {
+        handleConnectLinkedIn();
+        return;
+      } else {
+        setError('LinkedIn account must be connected to post');
+        return;
+      }
+    }
+
+    setIsPostingToSocial(true);
+    setError(null);
+    setSocialPostResults(null);
+
+    try {
+      const postData = {
+        content_text: generatedContent,
+        media_urls: selectedMedia.map(m => m.url),
+        media_type: selectedMedia.length > 0 ? 'image' : 'text',
+        platforms: selectedSocialPlatforms
+      };
+
+      // Use OAuth posting if LinkedIn is selected and connected
+      const hasLinkedIn = selectedSocialPlatforms.includes('linkedin');
+      const linkedInConnected = isPlatformConnected('linkedin');
+      
+      let result;
+      if (hasLinkedIn && linkedInConnected) {
+        // Use OAuth posting for LinkedIn
+        result = await postToSocialMediaOAuth(postData);
+      } else {
+        // Use direct posting for Twitter
+        result = await postToSocialMedia(postData);
+      }
+
+      setSocialPostResults(result);
+      
+      if (result.success) {
+        setSuccess(true);
+        setSuccessType('social');
+        setError(null);
+      } else {
+        // Show specific error messages for different platforms
+        const failedPlatforms = result.results?.filter(r => !r.success) || [];
+        if (failedPlatforms.length > 0) {
+          const errorMessages = failedPlatforms.map(p => `${p.platform}: ${p.error}`).join('\n');
+          setError(`Some posts failed:\n${errorMessages}`);
+        } else {
+          setError('Some posts failed. Check results below.');
+        }
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to post to social media');
+    } finally {
+      setIsPostingToSocial(false);
+    }
+  };
+
+  // Toggle social platform selection
+  const handleSocialPlatformToggle = (platform: string) => {
+    setSelectedSocialPlatforms(prev => 
+      prev.includes(platform) 
+        ? prev.filter(p => p !== platform)
+        : [...prev, platform]
+    );
+  };
+
+  // Connect LinkedIn account via OAuth
+  const handleConnectLinkedIn = async () => {
+    if (!user?.user_id) {
+      setError('You must be logged in to connect LinkedIn');
+      return;
+    }
+
+    try {
+      const result = await initiateOAuth('linkedin', user.user_id);
+      // Redirect to LinkedIn OAuth
+      window.location.href = result.oauth_url;
+    } catch (error: any) {
+      setError(error.message || 'Failed to connect LinkedIn account');
+    }
+  };
+
+  // Load connected accounts
+  const loadConnectedAccounts = async () => {
+    if (!user?.user_id) return;
+    
+    setIsLoadingAccounts(true);
+    try {
+      const result = await getConnectedAccounts(user.user_id);
+      setConnectedAccounts(result.accounts || []);
+    } catch (error) {
+      console.error('Failed to load connected accounts:', error);
+    } finally {
+      setIsLoadingAccounts(false);
+    }
+  };
+
+  // Disconnect social media account
+  const handleDisconnectAccount = async (accountId: number) => {
+    if (!user?.user_id) return;
+
+    try {
+      await disconnectAccount(accountId, user.user_id);
+      await loadConnectedAccounts(); // Reload accounts
+    } catch (error: any) {
+      setError(error.message || 'Failed to disconnect account');
+    }
+  };
+
+  // Check if platform is connected
+  const isPlatformConnected = (platform: string) => {
+    return connectedAccounts.some(account => account.platform === platform);
+  };
+
+  // Get connected account for platform
+  const getConnectedAccount = (platform: string) => {
+    return connectedAccounts.find(account => account.platform === platform);
+  };
+
+  // Load connected accounts on component mount
+  useEffect(() => {
+    loadConnectedAccounts();
+  }, [user]);
+
+  // Handle OAuth callback success/error
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const success = urlParams.get('success');
+    const error = urlParams.get('error');
+    const name = urlParams.get('name');
+
+    if (success === 'linkedin_connected') {
+      setSuccess(true);
+      setSuccessType('social');
+      setError(null);
+      // Show success message
+      setTimeout(() => {
+        alert(`✅ LinkedIn connected successfully! Welcome ${name || 'LinkedIn User'}`);
+        loadConnectedAccounts(); // Reload accounts
+      }, 500);
+      
+      // Clean URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (error) {
+      const message = urlParams.get('message');
+      setError(`LinkedIn connection failed: ${message || error}`);
+      
+      // Clean URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
 
   const handlePlatformToggle = (platformId: string) => {
     setSelectedPlatforms(prev => 
@@ -245,7 +459,9 @@ const ContentCreation: React.FC = () => {
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
             <p className="text-base font-semibold">
-              {successType === 'scheduled' ? 'Content scheduled successfully!' : 'Content published successfully!'}
+              {successType === 'scheduled' ? 'Content scheduled successfully!' : 
+               successType === 'social' ? 'Posted to social media successfully!' :
+               'Content published successfully!'}
             </p>
           </div>
         )}
@@ -463,6 +679,183 @@ const ContentCreation: React.FC = () => {
               </div>
             </Card>
 
+            {/* Social Media Platforms */}
+            <Card>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                <Share2 className="w-5 h-5 inline mr-2" />
+                Social Media Platforms
+              </h2>
+              <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                <p className="text-sm text-blue-800 dark:text-blue-200">
+                  <strong>Note:</strong> "Publish Now" will post directly to the selected platforms using configured API credentials.
+                </p>
+              </div>
+              <div className="grid grid-cols-1 gap-3 mb-4">
+                {[
+                  { id: 'twitter', name: 'Twitter/X', color: 'bg-blue-500', status: '✅ Ready to Post', enabled: true },
+                  { 
+                    id: 'linkedin', 
+                    name: 'LinkedIn', 
+                    color: 'bg-blue-700', 
+                    status: isPlatformConnected('linkedin') ? '✅ Connected' : '🔗 Connect Required', 
+                    enabled: true 
+                  }
+                ].map((platform) => (
+                  <label
+                    key={platform.id}
+                    className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${
+                      selectedSocialPlatforms.includes(platform.id)
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                        : 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800'
+                    } ${!platform.enabled ? 'opacity-60' : ''}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedSocialPlatforms.includes(platform.id)}
+                      onChange={() => handleSocialPlatformToggle(platform.id)}
+                      className="sr-only"
+                      disabled={!platform.enabled}
+                    />
+                    <div className="flex items-center space-x-3 flex-1">
+                      <div className={`w-8 h-8 ${platform.color} rounded-lg flex items-center justify-center`}>
+                        <span className="text-sm font-semibold text-white">
+                          {platform.name.charAt(0)}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                          {platform.name}
+                        </p>
+                        <p className={`text-xs ${
+                          platform.id === 'twitter' || isPlatformConnected(platform.id) 
+                            ? 'text-green-600 dark:text-green-400' 
+                            : 'text-orange-600 dark:text-orange-400'
+                        }`}>
+                          {platform.status}
+                        </p>
+                      </div>
+                    </div>
+                    {selectedSocialPlatforms.includes(platform.id) && (
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    )}
+                  </label>
+                ))}
+              </div>
+              
+              {/* LinkedIn OAuth Connection */}
+              {selectedSocialPlatforms.includes('linkedin') && !isPlatformConnected('linkedin') && (
+                <div className="mb-3 p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-orange-800 dark:text-orange-200">
+                        <strong>LinkedIn:</strong> OAuth connection required for posting
+                      </p>
+                      <p className="text-xs text-orange-600 dark:text-orange-300 mt-1">
+                        Click to connect your LinkedIn account
+                      </p>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleConnectLinkedIn}
+                      className="text-orange-600 border-orange-300 hover:bg-orange-50"
+                    >
+                      Connect LinkedIn
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* LinkedIn Connected Status */}
+              {selectedSocialPlatforms.includes('linkedin') && isPlatformConnected('linkedin') && (
+                <div className="mb-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-green-800 dark:text-green-200">
+                        <strong>LinkedIn:</strong> ✅ Connected and ready to post
+                      </p>
+                      <p className="text-xs text-green-600 dark:text-green-300 mt-1">
+                        {getConnectedAccount('linkedin')?.user_info?.name || 'LinkedIn User'}
+                      </p>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleDisconnectAccount(getConnectedAccount('linkedin')?.id)}
+                      className="text-red-600 border-red-300 hover:bg-red-50"
+                    >
+                      Disconnect
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Test Credentials Button */}
+              <Button 
+                variant="outline"
+                className="w-full mb-3" 
+                onClick={async () => {
+                  try {
+                    const result = await testSocialCredentials();
+                    console.log('Credentials test:', result);
+                    if (result.credentials_test.twitter.status === 'success') {
+                      setError(null);
+                      alert(`✅ Twitter credentials working! Username: @${result.credentials_test.twitter.username}`);
+                    } else {
+                      setError('Twitter credentials not working properly');
+                    }
+                  } catch (err: any) {
+                    setError(err.message || 'Failed to test credentials');
+                  }
+                }}
+              >
+                🧪 Test Twitter Connection
+              </Button>
+
+              {/* Social Media Post Button */}
+              <Button 
+                className="w-full" 
+                onClick={handlePostToSocialMedia}
+                disabled={isPostingToSocial || !generatedContent.trim()}
+              >
+                {isPostingToSocial ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    Posting...
+                  </>
+                ) : (
+                  <>
+                    <Share2 className="w-4 h-4 mr-2" />
+                    Post to Social Media
+                  </>
+                )}
+              </Button>
+
+              {/* Social Media Results */}
+              {socialPostResults && (
+                <div className="mt-4 p-3 border rounded-lg bg-gray-50 dark:bg-gray-800">
+                  <h4 className="font-medium text-gray-900 dark:text-white mb-2">
+                    Posting Results:
+                  </h4>
+                  <div className="space-y-2">
+                    {socialPostResults.results.map((result: any, index: number) => (
+                      <div key={index} className="flex items-center justify-between text-sm">
+                        <span className="capitalize">{result.platform}</span>
+                        {result.success ? (
+                          <Badge variant="success">Posted</Badge>
+                        ) : (
+                          <Badge variant="error">Failed</Badge>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                    {socialPostResults.message}
+                  </p>
+                </div>
+              )}
+            </Card>
+
             {/* Scheduling */}
             <Card>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
@@ -502,9 +895,22 @@ const ContentCreation: React.FC = () => {
                   <Clock className="w-4 h-4 mr-2" />
                   Schedule
                 </Button>
-                <Button className="flex-1" onClick={handlePublishNow}>
-                  <Send className="w-4 h-4 mr-2" />
-                  Publish Now
+                <Button 
+                  className="flex-1" 
+                  onClick={handlePublishNow}
+                  disabled={isPostingToSocial || !generatedContent.trim()}
+                >
+                  {isPostingToSocial ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      Publishing...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4 mr-2" />
+                      Publish Now
+                    </>
+                  )}
                 </Button>
               </div>
             </Card>

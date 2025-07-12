@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaUser, FaEnvelope, FaAward } from 'react-icons/fa';
+import UpcomingEvents from './UpcomingEvents';
+import CommunityPosts from './CommunityPosts';
 
 const platforms = [
   { name: 'LinkedIn', icon: 'https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/linkedin.svg', alt: 'LinkedIn logo', url: 'https://www.linkedin.com/' },
@@ -73,16 +75,54 @@ const howSteps = [
 
 const Main: React.FC = () => {
   const navigate = useNavigate ? useNavigate() : (url: string) => { window.location.href = url; };
+  const [activeSection, setActiveSection] = useState<'home' | 'about' | 'events' | 'posts'>('home');
+
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  if (activeSection === 'events') {
+    return <UpcomingEvents onBack={() => setActiveSection('home')} />;
+  }
+
+  if (activeSection === 'posts') {
+    return <CommunityPosts onBack={() => setActiveSection('home')} />;
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-900 text-white scroll-smooth">
       {/* Header */}
       <header className="flex justify-between items-center px-8 py-4 bg-gray-800 shadow">
-        <div className="text-2xl font-bold tracking-wide">SocialsAI</div>
+        <div 
+          className="text-2xl font-bold tracking-wide cursor-pointer hover:text-yellow-400 transition-colors"
+          onClick={() => setActiveSection('home')}
+        >
+          SocialsAI
+        </div>
         <nav className="flex items-center gap-6">
-          <a href="#about" className="hover:text-yellow-400">About</a>
+          <button 
+            onClick={() => setActiveSection('about')}
+            className={`hover:text-yellow-400 transition-colors ${activeSection === 'about' ? 'text-yellow-400' : ''}`}
+          >
+            About
+          </button>
           <a href="#features" className="hover:text-yellow-400">Features</a>
           <a href="#how" className="hover:text-yellow-400">How it works</a>
+          <button 
+            onClick={() => setActiveSection('events')}
+            className={`hover:text-yellow-400 transition-colors ${activeSection === 'events' ? 'text-yellow-400' : ''}`}
+          >
+            Upcoming Events
+          </button>
+          <button 
+            onClick={() => setActiveSection('posts')}
+            className={`hover:text-yellow-400 transition-colors ${activeSection === 'posts' ? 'text-yellow-400' : ''}`}
+          >
+            Community Posts
+          </button>
           <a href="#contact" className="hover:text-yellow-400">Contact</a>
           <button
             className="bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-semibold px-4 py-2 rounded mx-2"
@@ -266,7 +306,7 @@ const Main: React.FC = () => {
                 <span className="text-purple-300 font-medium">AWS Community Builder</span>
               </div>
               <a
-                href="https://www.linkedin.com/in/aadhityaa-sb"
+                href="https://www.linkedin.com/in/aadhi0612/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1 text-blue-400 hover:underline"
@@ -286,7 +326,7 @@ const Main: React.FC = () => {
                 <span className="text-green-300 font-medium">AWS Hero</span>
               </div>
               <a
-                href="https://www.linkedin.com/in/ayyanar-jeyakrishnan"
+                href="https://www.linkedin.com/in/jayyanar/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1 text-blue-400 hover:underline"
@@ -299,8 +339,8 @@ const Main: React.FC = () => {
           <div className="mt-8 flex flex-col items-center">
             <div className="flex items-center gap-2">
               <FaEnvelope className="text-blue-400 text-xl" />
-              <a href="mailto:aadhityaa.ai@gmail.com" className="text-blue-400 hover:underline text-lg font-semibold">
-                aadhityaa.ai@gmail.com
+              <a href="mailto:info@dataopslabs.com" className="text-blue-400 hover:underline text-lg font-semibold">
+                info@dataopslabs.com
               </a>
             </div>
             <span className="text-gray-400 text-sm mt-2">Official website contact email</span>
@@ -310,7 +350,17 @@ const Main: React.FC = () => {
 
       {/* Footer */}
       <footer className="py-6 bg-gray-800 text-center text-gray-400 border-t border-gray-700">
-        &copy; {new Date().getFullYear()} SocialsAI. All rights reserved.
+        <div className="flex flex-col items-center gap-2">
+          <div>&copy; {new Date().getFullYear()} SocialsAI. All rights reserved.</div>
+          <div className="flex items-center gap-4 text-sm">
+            <span className="flex items-center gap-2">
+              Powered by 
+              <span className="text-orange-400 font-semibold">Amazon Nova</span>
+              and
+              <span className="text-blue-400 font-semibold">DataOps Labs</span>
+            </span>
+          </div>
+        </div>
       </footer>
     </div>
   );
