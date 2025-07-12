@@ -1,0 +1,5 @@
+# Redirect API calls to the actual API Gateway
+/api/* https://wi6uxcbvs9.execute-api.us-east-2.amazonaws.com/prod/:splat 200
+
+# Handle client-side routing
+/* /index.html 200
