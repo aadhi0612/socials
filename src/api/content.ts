@@ -1,6 +1,7 @@
 import { ContentCreate, ContentUpdate, ContentOut } from '../types';
+import awsConfig from '../config/aws';
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = awsConfig.apiUrl;
 
 export async function createContent(content: ContentCreate): Promise<ContentOut> {
   const token = sessionStorage.getItem('token');

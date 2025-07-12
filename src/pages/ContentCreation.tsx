@@ -18,6 +18,7 @@ import {
 import Card from '../components/UI/Card';
 import Button from '../components/UI/Button';
 import Badge from '../components/UI/Badge';
+import awsConfig from '../config/aws';
 import { mockPlatforms } from '../data/mockData';
 import { createContent } from '../api/content';
 import { postToSocialMedia, testSocialCredentials } from '../api/socialPosts';
@@ -206,7 +207,7 @@ const ContentCreation: React.FC = () => {
     setSuccess(false);
     setGeneratedContent('');
     try {
-      const res = await fetch('http://localhost:8000/ai/generate-text', {
+      const res = await fetch(`${awsConfig.apiUrl}/ai/generate-text`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: inputValue })
@@ -410,7 +411,7 @@ const ContentCreation: React.FC = () => {
   const uploadImagesToS3 = async (): Promise<string[]> => {
     const s3Urls: string[] = [];
     for (const file of selectedFiles) {
-      const res = await fetch('http://localhost:8000/content/media/presign-upload', {
+      const res = await fetch(`${awsConfig.apiUrl}/content/media/presign-upload`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

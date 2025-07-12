@@ -1,6 +1,7 @@
 import { MediaOut, MediaCreate } from '../types';
+import awsConfig from '../config/aws';
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = awsConfig.apiUrl;
 
 export async function fetchMedia(token: string): Promise<MediaOut[]> {
   const res = await fetch(`${API_BASE}/media/`, {
