@@ -75,6 +75,9 @@ def handler(event, context):
         elif path.startswith('/users'):
             return handle_users_simple(path, http_method, request_data, cors_headers)
         
+        elif path.startswith('/media'):
+            return handle_media(path, http_method, request_data, cors_headers)
+        
         elif path.startswith('/api/v1/direct-posts/immediate') and http_method == 'POST':
             return handle_social_posting(request_data, cors_headers)
         
@@ -294,3 +297,38 @@ def handle_social_posting(data, cors_headers):
             "message": f"Posted successfully to {len(platforms)} platforms"
         })
     }
+
+def handle_media(path, method, data, cors_headers):
+    """Handle media endpoints"""
+    if path == '/media/' and method == 'GET':
+        return {
+            "statusCode": 200,
+            "headers": cors_headers,
+            "body": json.dumps([
+                {
+                    "id": str(uuid.uuid4()),
+                    "name": "sample-image.jpg",
+                    "url": "https://picsum.photos/400/300",
+                    "type": "image",
+                    "size": 1024000,
+                    "created_at": datetime.utcnow().isoformat() + "Z"
+                }
+            ])
+        }
+    elif path == '/media/' and method == 'POST':
+        return {
+            "statusCode": 201,
+            "headers": cors_headers,
+            "body": json.dumps({
+                "id": str(uuid.uuid4()),
+                "name": data.get('name', 'uploaded-file'),
+                "url": "https://picsum.photos/400/300",
+                "message": "Media uploaded successfully"
+            })
+        }
+    else:
+        return {
+            "statusCode": 404,
+            "headers": cors_headers,
+            "body": json.dumps({"error": "Media endpoint not found"})
+        }
