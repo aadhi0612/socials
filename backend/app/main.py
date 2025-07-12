@@ -22,14 +22,22 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# For development, allow specific origins
+# For development and production, allow specific origins
 allowed_origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "http://192.168.29.208:5173",  # Your local network frontend
     "http://localhost:3000",
-    "http://127.0.0.1:3000"
+    "http://127.0.0.1:3000",
+    "https://socials.dataopslabs.com",  # Production frontend
 ]
+
+# Check if running in Lambda environment
+is_lambda = os.environ.get('AWS_LAMBDA_FUNCTION_NAME') is not None
+
+if is_lambda:
+    # In Lambda, we only need the production origin
+    allowed_origins = ["https://socials.dataopslabs.com"]
 
 # Configure CORS - Add this BEFORE including routers
 app.add_middleware(

@@ -1,0 +1,109 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Socials Backend API - FastAPI with Lambda
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 512
+    Runtime: python3.12
+    Environment:
+      Variables:
+        AWS_BEDROCK_REGION: us-east-1
+        AWS_S3_BUCKET: socials-aws-1
+
+Parameters:
+  Stage:
+    Type: String
+    Default: prod
+    Description: Deployment stage
+
+Resources:
+  SocialsApi:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "socials-backend-${Stage}"
+      CodeUri: .
+      Handler: lambda_handler.handler
+      Runtime: python3.12
+      Timeout: 30
+      MemorySize: 512
+      Environment:
+        Variables:
+          AWS_BEDROCK_REGION: us-east-1
+          AWS_S3_BUCKET: socials-aws-1
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /{proxy+}
+            Method: ANY
+            RestApiId: !Ref SocialsApiGateway
+        RootApiEvent:
+          Type: Api
+          Properties:
+            Path: /
+            Method: ANY
+            RestApiId: !Ref SocialsApiGateway
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+                - s3:PutObject
+                - s3:DeleteObject
+                - s3:ListBucket
+              Resource:
+                - !Sub "arn:aws:s3:::socials-aws-1"
+                - !Sub "arn:aws:s3:::socials-aws-1/*"
+            - Effect: Allow
+              Action:
+                - bedrock:InvokeModel
+                - bedrock:InvokeModelWithResponseStream
+              Resource: "*"
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+                - secretsmanager:DescribeSecret
+              Resource: "*"
+
+  SocialsApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub "socials-api-${Stage}"
+      StageName: !Ref Stage
+      Cors:
+        AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS,PATCH'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Requested-With'"
+        AllowOrigin: "'https://socials.dataopslabs.com'"
+        AllowCredentials: true
+        MaxAge: "'600'"
+      GatewayResponses:
+        DEFAULT_4XX:
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: "'https://socials.dataopslabs.com'"
+              Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Requested-With'"
+              Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS,PATCH'"
+              Access-Control-Allow-Credentials: "'true'"
+        DEFAULT_5XX:
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: "'https://socials.dataopslabs.com'"
+              Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Requested-With'"
+              Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS,PATCH'"
+              Access-Control-Allow-Credentials: "'true'"
+
+Outputs:
+  SocialsApiUrl:
+    Description: "API Gateway endpoint URL for Socials API"
+    Value: !Sub "https://${SocialsApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Stage}/"
+    Export:
+      Name: !Sub "${AWS::StackName}-ApiUrl"
+  
+  SocialsApiId:
+    Description: "API Gateway ID"
+    Value: !Ref SocialsApiGateway
+    Export:
+      Name: !Sub "${AWS::StackName}-ApiId"

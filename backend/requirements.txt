@@ -4,7 +4,6 @@ boto3
 python-dotenv
 email-validator
 bcrypt
-uuid
 PyJWT
 sqlalchemy
 psycopg2-binary
@@ -14,3 +13,4 @@ requests
 requests-oauthlib
 APScheduler
 python-multipart
+mangum
