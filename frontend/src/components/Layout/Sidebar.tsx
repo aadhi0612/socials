@@ -7,7 +7,8 @@ import {
   Settings, 
   Target,
   Zap,
-  LogOut
+  LogOut,
+  Link2
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -69,7 +70,8 @@ const Sidebar: React.FC = () => {
     { path: '/create', icon: PenTool, label: 'Content Creation' },
     { path: '/media', icon: Image, label: 'Media Library' },
     { path: '/campaigns', icon: Target, label: 'Campaign Manager' },
-    { path: '/admin', icon: Settings, label: 'Admin Dashboard' }
+    { path: '/admin', icon: Settings, label: 'Admin Dashboard' },
+    { path: '/social-accounts', icon: Link2, label: 'Social Accounts' },
   ];
 
   return (

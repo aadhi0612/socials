@@ -74,6 +74,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setToken(loginResult.token);
         sessionStorage.setItem('token', loginResult.token);
         sessionStorage.setItem('user_id', loginResult.user_id);
+        // Set JWT as a cookie for cross-window OAuth
+        document.cookie = `token=${loginResult.token}; path=/; samesite=strict`;
         // Fetch the full user object (with profile_pic_url)
         const backendUser = await getUser(loginResult.user_id, loginResult.token);
         setUser(backendUser);
