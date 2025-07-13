@@ -49,7 +49,7 @@ def presign_upload(post_id: str = Body(...), filename: str = Body(...), filetype
     if os.getenv('AWS_LAMBDA_FUNCTION_NAME'):
         # Running in Lambda - use IAM role
         s3 = boto3.client("s3", region_name="us-east-2")
-        bucket = "socials-media-098493093308"
+        bucket = "socials-aws-1"
     else:
         # Local development - use environment variables
         s3 = boto3.client(
@@ -58,14 +58,18 @@ def presign_upload(post_id: str = Body(...), filename: str = Body(...), filetype
             aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
             region_name=os.getenv("AWS_DEFAULT_REGION"),
         )
-        bucket = os.getenv("AWS_S3_BUCKET")
+        bucket = "socials-aws-1"
+    print('DEBUG: Backend S3 bucket:', bucket)
     
+    if not bucket:
+        raise HTTPException(status_code=500, detail="AWS_S3_BUCKET environment variable not set")
+
     s3_key = f"content/{post_id}/{filename}"
     try:
         url = s3.generate_presigned_url(
             ClientMethod='put_object',
             Params={
-                'Bucket': bucket,
+                'Bucket': "socials-aws-1",
                 'Key': s3_key,
                 'ContentType': filetype
             },

@@ -1,5 +1,5 @@
 // src/api/users.ts
-export const API_BASE = 'https://50c83fay16.execute-api.us-east-2.amazonaws.com/prod';
+export const API_BASE = import.meta.env.VITE_API_URL;
 export async function getUser(id) {
     const res = await fetch(`${API_BASE}/users/${id}`, {
         headers: {

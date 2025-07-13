@@ -25,7 +25,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { useNavigate } from 'react-router-dom';
 import MediaSelectModal from '../components/UI/MediaSelectModal';
 
-const API_BASE = 'https://50c83fay16.execute-api.us-east-2.amazonaws.com/prod';
+const API_BASE = import.meta.env.VITE_API_URL;
 
 const ContentCreation: React.FC = () => {
   const { user, loading, token } = useAuth();
@@ -43,6 +43,7 @@ const ContentCreation: React.FC = () => {
   const [successType, setSuccessType] = useState<'published' | 'scheduled' | null>(null);
   const [postId, setPostId] = useState<string>(uuidv4());
   const bucket = import.meta.env.VITE_AWS_S3_BUCKET as string;
+  console.log('DEBUG: Frontend S3 bucket:', bucket);
   const navigate = useNavigate();
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);

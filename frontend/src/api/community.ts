@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://50c83fay16.execute-api.us-east-2.amazonaws.com/prod';
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 export interface PostEngagement {
   likes: number;

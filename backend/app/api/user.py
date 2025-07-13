@@ -147,7 +147,7 @@ async def get_profile_pic_upload_url(request: Request):
     if os.getenv('AWS_LAMBDA_FUNCTION_NAME'):
         # Running in Lambda - use IAM role
         s3 = boto3.client("s3", region_name="us-east-2")
-        bucket = "socials-media-098493093308"
+        bucket = "socials-aws-1"
     else:
         # Local development - use environment variables
         s3 = boto3.client(
@@ -156,7 +156,8 @@ async def get_profile_pic_upload_url(request: Request):
             aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
             region_name=os.getenv("AWS_DEFAULT_REGION"),
         )
-        bucket = os.getenv("AWS_S3_BUCKET")
+        bucket = "socials-aws-1"
+    print('DEBUG: Backend S3 bucket:', bucket)
     
     if not bucket:
         raise HTTPException(status_code=500, detail="AWS_S3_BUCKET environment variable not set")

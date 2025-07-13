@@ -12,11 +12,13 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
-const API_BASE = 'https://50c83fay16.execute-api.us-east-2.amazonaws.com/prod';
+const API_BASE = import.meta.env.VITE_API_URL;
 
 const Sidebar: React.FC = () => {
   const { user, logout, token, setUser } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const bucket = import.meta.env.VITE_AWS_S3_BUCKET;
+  console.log('DEBUG: Frontend S3 bucket:', bucket);
   // Handler for file input change
   const handleProfilePicChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

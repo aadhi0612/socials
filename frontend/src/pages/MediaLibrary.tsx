@@ -43,6 +43,7 @@ const MediaLibrary: React.FC = () => {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [sessionId] = useState(() => uuidv4());
   const bucket = import.meta.env.VITE_AWS_S3_BUCKET as string;
+  console.log('DEBUG: Frontend S3 bucket:', bucket);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [renameModalOpen, setRenameModalOpen] = useState(false);
   const [renameValue, setRenameValue] = useState('');
