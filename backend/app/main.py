@@ -15,19 +15,14 @@ load_dotenv()
 
 app = FastAPI()
 
-# Configure allowed origins for production
-allowed_origins = [
-    "https://main.d2b7ip780trkwd.amplifyapp.com",  # Amplify frontend
-    "https://socials.dataopslabs.com",              # Custom domain
-    "http://localhost:5173",                        # Local development
-    "http://localhost:3000",                        # Alternative local dev
-]
+# Configure allowed origins for production - TEMPORARILY ALLOW ALL
+allowed_origins = ["*"]  # Allow all origins for demo
 
 # Configure CORS - Add this BEFORE including routers
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
-    allow_credentials=True,  # Can use credentials with specific origins
+    allow_credentials=False,  # Must be False when allow_origins is ["*"]
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
     expose_headers=["*"],
@@ -35,21 +30,13 @@ app.add_middleware(
 
 def get_cors_headers(origin: str = None):
     """Get CORS headers for the given origin"""
-    if origin and origin in allowed_origins:
-        return {
-            "Access-Control-Allow-Origin": origin,
-            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
-            "Access-Control-Allow-Headers": "*",
-            "Access-Control-Allow-Credentials": "true",
-        }
-    else:
-        # Default to Amplify URL
-        return {
-            "Access-Control-Allow-Origin": "https://main.d2b7ip780trkwd.amplifyapp.com",
-            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
-            "Access-Control-Allow-Headers": "*",
-            "Access-Control-Allow-Credentials": "true",
-        }
+    # Allow all origins for demo
+    return {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+        "Access-Control-Allow-Headers": "*",
+        "Access-Control-Allow-Credentials": "false",  # Must be false when origin is *
+    }
 
 # Custom exception handlers to ensure CORS headers are always included
 @app.exception_handler(StarletteHTTPException)

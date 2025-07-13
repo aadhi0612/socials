@@ -6,33 +6,19 @@ from app.main import app
 # Initialize the Mangum adapter for AWS Lambda
 handler = Mangum(app, lifespan="off")
 
-# Allowed origins
-ALLOWED_ORIGINS = [
-    "https://main.d2b7ip780trkwd.amplifyapp.com",
-    "https://socials.dataopslabs.com",
-    "http://localhost:5173",
-    "http://localhost:3000"
-]
+# Allowed origins - TEMPORARILY ALLOW ALL
+ALLOWED_ORIGINS = ["*"]
 
 def get_cors_headers(origin=None):
     """Get appropriate CORS headers based on origin"""
-    if origin and origin in ALLOWED_ORIGINS:
-        return {
-            'Access-Control-Allow-Origin': origin,
-            'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Requested-With',
-            'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS,PATCH',
-            'Access-Control-Allow-Credentials': 'true',
-            'Content-Type': 'application/json'
-        }
-    else:
-        # Default to Amplify URL if origin not recognized
-        return {
-            'Access-Control-Allow-Origin': 'https://main.d2b7ip780trkwd.amplifyapp.com',
-            'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Requested-With',
-            'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS,PATCH',
-            'Access-Control-Allow-Credentials': 'true',
-            'Content-Type': 'application/json'
-        }
+    # Allow all origins for demo
+    return {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Requested-With',
+        'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS,PATCH',
+        'Access-Control-Allow-Credentials': 'false',  # Must be false when origin is *
+        'Content-Type': 'application/json'
+    }
 
 def lambda_handler(event, context):
     """

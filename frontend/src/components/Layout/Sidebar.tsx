@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE = 'https://50c83fay16.execute-api.us-east-2.amazonaws.com/prod';
 
 const Sidebar: React.FC = () => {
   const { user, logout, token, setUser } = useAuth();

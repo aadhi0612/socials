@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { RegisterUser } from '../api/users';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE = 'https://50c83fay16.execute-api.us-east-2.amazonaws.com/prod';
 
 const roles = ['Admin', 'Editor', 'Viewer'] as const;
 type Role = typeof roles[number];

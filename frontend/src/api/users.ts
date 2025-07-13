@@ -1,6 +1,6 @@
 // src/api/users.ts
 
-export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+export const API_BASE = 'https://50c83fay16.execute-api.us-east-2.amazonaws.com/prod';
 
 export type LoginResult = { token: string; user_id: string };
 

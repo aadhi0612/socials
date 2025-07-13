@@ -1,6 +1,6 @@
 import { ContentCreate, ContentUpdate, ContentOut } from '../types';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE = 'https://50c83fay16.execute-api.us-east-2.amazonaws.com/prod';
 
 export async function createContent(content: ContentCreate): Promise<ContentOut> {
   const token = sessionStorage.getItem('token');
