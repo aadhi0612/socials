@@ -12,6 +12,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
+const API_BASE = 'https://50c83fay16.execute-api.us-east-2.amazonaws.com/prod';
+
 const Sidebar: React.FC = () => {
   const { user, logout, token, setUser } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -25,7 +27,7 @@ const Sidebar: React.FC = () => {
     }
     console.log('Using token for profile update:', token);
     // 1. Get presigned S3 upload URL from backend
-    const res = await fetch('http://localhost:8000/users/profile-pic-upload', {
+    const res = await fetch(`${API_BASE}/users/profile-pic-upload`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id: user?.user_id }),
@@ -42,7 +44,7 @@ const Sidebar: React.FC = () => {
     const region = import.meta.env.VITE_AWS_REGION;
     const profilePicUrl = `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
     // 4. Update profile_pic_url in backend
-    const updateRes = await fetch('http://localhost:8000/users/me/profile-pic', {
+    const updateRes = await fetch('`${API_BASE}/users/me/profile-pic`', {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -114,7 +116,7 @@ const Sidebar: React.FC = () => {
         <div className="flex items-center space-x-3 mb-4">
           <label style={{ cursor: 'pointer' }}>
             <img
-              src={user?.profile_pic_url && user.profile_pic_url.startsWith('http') ? user.profile_pic_url : '/default-user-icon.png'}
+              src={user?.profile_pic_url && user.profile_pic_url.startsWith('http') ? user.profile_pic_url : `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&background=3B82F6&color=fff&size=40`}
               alt={user?.name}
               className="w-10 h-10 rounded-full object-cover bg-gray-200"
             />
@@ -131,7 +133,7 @@ const Sidebar: React.FC = () => {
                   return;
                 }
                 // 1. Get presigned S3 upload URL from backend
-                const res = await fetch('http://localhost:8000/users/profile-pic-upload', {
+                const res = await fetch(`${API_BASE}/users/profile-pic-upload`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ user_id: user?.user_id }),
@@ -148,7 +150,7 @@ const Sidebar: React.FC = () => {
                 const region = import.meta.env.VITE_AWS_REGION;
                 const profilePicUrl = `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
                 // 4. Update profile_pic_url in backend
-                const updateRes = await fetch('http://localhost:8000/users/me/profile-pic', {
+                const updateRes = await fetch('`${API_BASE}/users/me/profile-pic`', {
                   method: 'PUT',
                   headers: {
                     'Content-Type': 'application/json',

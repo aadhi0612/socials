@@ -9,12 +9,18 @@ import uuid
 load_dotenv()
 
 def get_dynamodb_resource():
-    return boto3.resource(
-        "dynamodb",
-        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-        region_name=os.getenv("AWS_DEFAULT_REGION"),
-    )
+    # Use IAM role credentials in Lambda, fall back to env vars for local development
+    if os.getenv('AWS_LAMBDA_FUNCTION_NAME'):
+        # Running in Lambda - use IAM role
+        return boto3.resource("dynamodb", region_name="us-east-2")
+    else:
+        # Local development - use environment variables
+        return boto3.resource(
+            "dynamodb",
+            aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+            aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+            region_name=os.getenv("AWS_DEFAULT_REGION"),
+        )
 
 dynamodb = get_dynamodb_resource()
 table = dynamodb.Table('media')

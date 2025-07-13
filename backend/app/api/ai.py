@@ -13,15 +13,24 @@ class PromptRequest(BaseModel):
 class ImagePromptRequest(BaseModel):
     prompt: str
 
+def get_bedrock_client():
+    load_dotenv()
+    # Use IAM role credentials in Lambda, fall back to env vars for local development
+    if os.getenv('AWS_LAMBDA_FUNCTION_NAME'):
+        # Running in Lambda - use IAM role
+        return boto3.client("bedrock-runtime", region_name="us-east-1")
+    else:
+        # Local development - use environment variables
+        return boto3.client(
+            "bedrock-runtime",
+            aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+            aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+            region_name=os.getenv("AWS_BEDROCK_REGION"),
+        )
+
 @router.post("/generate-text")
 def generate_text(request: PromptRequest):
-    load_dotenv()
-    bedrock = boto3.client(
-        "bedrock-runtime",
-        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-        region_name=os.getenv("AWS_BEDROCK_REGION"),
-    )
+    bedrock = get_bedrock_client()
     try:
         response = bedrock.invoke_model(
             modelId="amazon.nova-pro-v1:0",  # or "amazon.nova-lite-v1:0" for a lighter model
@@ -62,13 +71,7 @@ def generate_text(request: PromptRequest):
 
 @router.post("/generate-image")
 def generate_image(request: ImagePromptRequest):
-    load_dotenv()
-    bedrock = boto3.client(
-        "bedrock-runtime",
-        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-        region_name=os.getenv("AWS_BEDROCK_REGION"),
-    )
+    bedrock = get_bedrock_client()
     def get_short_name(prompt, max_words=6, max_length=30):
         clean = ''.join(c if c.isalnum() or c.isspace() else '' for c in prompt)
         words = ' '.join(clean.split()[:max_words])

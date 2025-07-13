@@ -1,6 +1,6 @@
 import { MediaOut, MediaCreate } from '../types';
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = 'https://50c83fay16.execute-api.us-east-2.amazonaws.com/prod';
 
 export async function fetchMedia(token: string): Promise<MediaOut[]> {
   const res = await fetch(`${API_BASE}/media/`, {

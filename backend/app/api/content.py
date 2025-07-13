@@ -44,13 +44,22 @@ def delete_content_endpoint(content_id: str):
 @router.post("/media/presign-upload")
 def presign_upload(post_id: str = Body(...), filename: str = Body(...), filetype: str = Body(...)):
     load_dotenv()
-    s3 = boto3.client(
-        "s3",
-        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-        region_name=os.getenv("AWS_DEFAULT_REGION"),
-    )
-    bucket = os.getenv("AWS_S3_BUCKET")
+    
+    # Use IAM role credentials in Lambda, fall back to env vars for local development
+    if os.getenv('AWS_LAMBDA_FUNCTION_NAME'):
+        # Running in Lambda - use IAM role
+        s3 = boto3.client("s3", region_name="us-east-2")
+        bucket = "socials-media-098493093308"
+    else:
+        # Local development - use environment variables
+        s3 = boto3.client(
+            "s3",
+            aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+            aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+            region_name=os.getenv("AWS_DEFAULT_REGION"),
+        )
+        bucket = os.getenv("AWS_S3_BUCKET")
+    
     s3_key = f"content/{post_id}/{filename}"
     try:
         url = s3.generate_presigned_url(

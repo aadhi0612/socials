@@ -14,9 +14,14 @@ import {
   X,
   Grid
 } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { createContent } from '../api/content';
+import { ContentCreate } from '../types';
 import Card from '../components/UI/Card';
 import Button from '../components/UI/Button';
 import Badge from '../components/UI/Badge';
+
+const API_BASE = 'https://50c83fay16.execute-api.us-east-2.amazonaws.com/prod';
 import { mockPlatforms } from '../data/mockData';
 import { createContent } from '../api/content';
 import { useAuth } from '../contexts/AuthContext';
@@ -161,7 +166,7 @@ const ContentCreation: React.FC = () => {
     setSuccess(false);
     setGeneratedContent('');
     try {
-      const res = await fetch('http://localhost:8000/ai/generate-text', {
+      const res = await fetch(`${API_BASE}/ai/generate-text`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: inputValue })
@@ -196,7 +201,7 @@ const ContentCreation: React.FC = () => {
   const uploadImagesToS3 = async (): Promise<string[]> => {
     const s3Urls: string[] = [];
     for (const file of selectedFiles) {
-      const res = await fetch('http://localhost:8000/content/media/presign-upload', {
+      const res = await fetch(`${API_BASE}/content/media/presign-upload`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

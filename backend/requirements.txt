@@ -4,6 +4,6 @@ boto3
 python-dotenv
 email-validator
 bcrypt
-uuid
 PyJWT
 requests
+mangum
