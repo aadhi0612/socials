@@ -3,6 +3,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { RegisterUser } from '../api/users';
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 const roles = ['Admin', 'Editor', 'Viewer'] as const;
 type Role = typeof roles[number];
 
@@ -56,7 +58,7 @@ const Register: React.FC = () => {
     let userId = '';
     try {
       // 1. Always get a user_id and presigned URL from backend
-      const res = await fetch('http://localhost:8000/users/profile-pic-upload', {
+      const res = await fetch(`${API_BASE}/users/profile-pic-upload`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({})

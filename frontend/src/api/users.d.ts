@@ -1,4 +1,4 @@
-export declare const API_BASE = "http://localhost:8000";
+export declare const API_BASE: string;
 export declare function getUser(id: string): Promise<any>;
 export declare function getCurrentUser(id: string): Promise<any>;
 export declare function createUser(user: {

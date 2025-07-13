@@ -1,6 +1,6 @@
 // src/api/users.ts
 
-export const API_BASE = 'http://localhost:8000';
+export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export type LoginResult = { token: string; user_id: string };
 
@@ -37,7 +37,7 @@ export interface RegisterUser {
 }
 
 export async function createUser(user: RegisterUser) {
-  const res = await fetch('http://localhost:8000/users/', {
+  const res = await fetch(`${API_BASE}/users/`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(user)

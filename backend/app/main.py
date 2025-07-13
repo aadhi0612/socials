@@ -1,9 +1,11 @@
 import os
 import re
 from dotenv import load_dotenv
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.api import user, content, ai, community, media
 from app.api.oauth import router as oauth_router
 from app.api.social_accounts import router as social_accounts_router
@@ -13,32 +15,79 @@ load_dotenv()
 
 app = FastAPI()
 
-# For development, allow all origins to fix CORS issues
-# In production, you should specify exact origins
-allowed_origins = ["*"]  # Allow all origins for development
+# Configure allowed origins for production
+allowed_origins = [
+    "https://main.d2b7ip780trkwd.amplifyapp.com",  # Amplify frontend
+    "https://socials.dataopslabs.com",              # Custom domain
+    "http://localhost:5173",                        # Local development
+    "http://localhost:3000",                        # Alternative local dev
+]
 
 # Configure CORS - Add this BEFORE including routers
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
-    allow_credentials=True,
+    allow_credentials=True,  # Can use credentials with specific origins
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
     expose_headers=["*"],
 )
 
-# Add explicit OPTIONS handler for preflight requests
-@app.options("/{path:path}")
-async def options_handler(request: Request, path: str):
-    return JSONResponse(
-        content={},
-        headers={
-            "Access-Control-Allow-Origin": "*",
+def get_cors_headers(origin: str = None):
+    """Get CORS headers for the given origin"""
+    if origin and origin in allowed_origins:
+        return {
+            "Access-Control-Allow-Origin": origin,
             "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
             "Access-Control-Allow-Headers": "*",
             "Access-Control-Allow-Credentials": "true",
         }
+    else:
+        # Default to Amplify URL
+        return {
+            "Access-Control-Allow-Origin": "https://main.d2b7ip780trkwd.amplifyapp.com",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Allow-Credentials": "true",
+        }
+
+# Custom exception handlers to ensure CORS headers are always included
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    origin = request.headers.get("origin")
+    headers = get_cors_headers(origin)
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+        headers=headers
     )
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    origin = request.headers.get("origin")
+    headers = get_cors_headers(origin)
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors()},
+        headers=headers
+    )
+
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception):
+    origin = request.headers.get("origin")
+    headers = get_cors_headers(origin)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error", "message": str(exc)},
+        headers=headers
+    )
+
+# Add explicit OPTIONS handler for preflight requests
+@app.options("/{path:path}")
+async def options_handler(request: Request, path: str):
+    origin = request.headers.get("origin")
+    headers = get_cors_headers(origin)
+    return JSONResponse(content={}, headers=headers)
 
 app.include_router(user.router, prefix="/users", tags=["users"])
 app.include_router(content.router)
