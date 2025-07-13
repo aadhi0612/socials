@@ -16,19 +16,16 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { createContent } from '../api/content';
-import { ContentCreate } from '../types';
+import { ContentCreate, MediaOut } from '../types';
 import Card from '../components/UI/Card';
 import Button from '../components/UI/Button';
 import Badge from '../components/UI/Badge';
-
-const API_BASE = 'https://50c83fay16.execute-api.us-east-2.amazonaws.com/prod';
 import { mockPlatforms } from '../data/mockData';
-import { createContent } from '../api/content';
-import { useAuth } from '../contexts/AuthContext';
 import { v4 as uuidv4 } from 'uuid';
 import { useNavigate } from 'react-router-dom';
-import { MediaOut } from '../types';
 import MediaSelectModal from '../components/UI/MediaSelectModal';
+
+const API_BASE = 'https://50c83fay16.execute-api.us-east-2.amazonaws.com/prod';
 
 const ContentCreation: React.FC = () => {
   const { user, loading, token } = useAuth();

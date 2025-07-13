@@ -1,327 +1,175 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { 
-  Plus, 
   Target, 
-  TrendingUp, 
-  Calendar, 
+  Calendar,
+  TrendingUp,
   Users,
-  DollarSign,
-  Eye,
-  Play,
-  Pause,
-  MoreHorizontal
+  BarChart3,
+  Zap,
+  Clock,
+  ArrowRight
 } from 'lucide-react';
 import Card from '../components/UI/Card';
 import Button from '../components/UI/Button';
-import Badge from '../components/UI/Badge';
-import { mockCampaigns } from '../data/mockData';
-import { format } from 'date-fns';
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const CampaignManager: React.FC = () => {
-  const [selectedCampaign, setSelectedCampaign] = useState<string | null>(null);
-
-  const selectedCampaignData = selectedCampaign ? mockCampaigns.find(c => c.id === selectedCampaign) : null;
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'success';
-      case 'completed': return 'info';
-      case 'paused': return 'warning';
-      default: return 'default';
+  const upcomingFeatures = [
+    {
+      icon: Target,
+      title: 'Campaign Planning',
+      description: 'Create and organize marketing campaigns with detailed goals and timelines'
+    },
+    {
+      icon: TrendingUp,
+      title: 'Performance Analytics',
+      description: 'Track campaign performance with real-time metrics and insights'
+    },
+    {
+      icon: Users,
+      title: 'Audience Targeting',
+      description: 'Define and target specific audience segments across platforms'
+    },
+    {
+      icon: BarChart3,
+      title: 'ROI Tracking',
+      description: 'Measure return on investment with comprehensive reporting tools'
+    },
+    {
+      icon: Calendar,
+      title: 'Content Scheduling',
+      description: 'Schedule and automate content publishing across all platforms'
+    },
+    {
+      icon: Zap,
+      title: 'A/B Testing',
+      description: 'Test different campaign variations to optimize performance'
     }
-  };
-
-  const getGoalProgress = (current: number, target: number) => {
-    return Math.min((current / target) * 100, 100);
-  };
-
-  // Mock chart data
-  const performanceData = [
-    { name: 'Week 1', reach: 12000, engagement: 800, leads: 45 },
-    { name: 'Week 2', reach: 15000, engagement: 1200, leads: 67 },
-    { name: 'Week 3', reach: 18000, engagement: 1500, leads: 89 },
-    { name: 'Week 4', reach: 22000, engagement: 1800, leads: 124 }
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Campaign Manager
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Organize and track your marketing campaigns.
-          </p>
+      <div className="text-center space-y-4">
+        <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mb-4">
+          <Target className="w-8 h-8 text-white" />
         </div>
-        
-        <Button>
-          <Plus className="w-4 h-4 mr-2" />
-          Create Campaign
-        </Button>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          Campaign Manager
+        </h1>
+        <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+          Powerful campaign management tools to plan, execute, and analyze your marketing efforts across all platforms.
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Campaigns List */}
-        <div className="lg:col-span-2">
-          <Card>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                All Campaigns
-              </h2>
-              <div className="flex space-x-2">
-                <Button variant="outline" size="sm">All</Button>
-                <Button variant="outline" size="sm">Active</Button>
-                <Button variant="outline" size="sm">Completed</Button>
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              {mockCampaigns.map((campaign) => (
-                <div
-                  key={campaign.id}
-                  onClick={() => setSelectedCampaign(campaign.id)}
-                  className={`p-4 border rounded-lg cursor-pointer transition-all duration-200 ${
-                    selectedCampaign === campaign.id
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                  }`}
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                          {campaign.name}
-                        </h3>
-                        <Badge variant={getStatusColor(campaign.status)}>
-                          {campaign.status}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                        {campaign.description}
-                      </p>
-                      <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
-                        <div className="flex items-center space-x-1">
-                          <Calendar className="w-4 h-4" />
-                          <span>
-                            {format(campaign.startDate, 'MMM d')} - {format(campaign.endDate, 'MMM d, yyyy')}
-                          </span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <Target className="w-4 h-4" />
-                          <span>{campaign.goals.length} goals</span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      <Button size="sm" variant="ghost">
-                        {campaign.status === 'active' ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                      </Button>
-                      <Button size="sm" variant="ghost">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  {/* Goals Progress */}
-                  <div className="space-y-2">
-                    {campaign.goals.slice(0, 2).map((goal, index) => (
-                      <div key={index} className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600 dark:text-gray-400 capitalize">
-                          {goal.type}
-                        </span>
-                        <div className="flex items-center space-x-2">
-                          <div className="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                            <div
-                              className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                              style={{ width: `${getGoalProgress(goal.current, goal.target)}%` }}
-                            ></div>
-                          </div>
-                          <span className="text-xs text-gray-500 dark:text-gray-400 min-w-0">
-                            {goal.current.toLocaleString()}/{goal.target.toLocaleString()}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
+      {/* Coming Soon Banner */}
+      <Card className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-blue-200 dark:border-blue-700">
+        <div className="text-center space-y-4">
+          <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-100 dark:bg-blue-900/50 rounded-full">
+            <Clock className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Coming Soon
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto">
+            We're working hard to bring you comprehensive campaign management features. 
+            Get notified when it's ready!
+          </p>
+          <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+            Get Notified
+            <ArrowRight className="w-4 h-4 ml-2" />
+          </Button>
+        </div>
+      </Card>
+
+      {/* Features Preview */}
+      <div className="space-y-6">
+        <div className="text-center">
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+            What's Coming
+          </h3>
+          <p className="text-gray-600 dark:text-gray-400">
+            Discover the powerful features that will transform your campaign management
+          </p>
         </div>
 
-        {/* Campaign Details */}
-        <div className="space-y-6">
-          {selectedCampaignData ? (
-            <>
-              <Card>
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    Campaign Overview
-                  </h3>
-                  <Badge variant={getStatusColor(selectedCampaignData.status)}>
-                    {selectedCampaignData.status}
-                  </Badge>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {upcomingFeatures.map((feature, index) => (
+            <Card key={index} className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+              <div className="space-y-4">
+                <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg group-hover:scale-110 transition-transform duration-300">
+                  <feature.icon className="w-6 h-6 text-white" />
                 </div>
-                
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-medium text-gray-900 dark:text-white">
-                      {selectedCampaignData.name}
-                    </h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                      {selectedCampaignData.description}
-                    </p>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <div>
-                      <div className="flex items-center space-x-2 mb-2">
-                        <TrendingUp className="w-4 h-4 text-green-500" />
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                          Total Reach
-                        </span>
-                      </div>
-                      <p className="text-xl font-bold text-gray-900 dark:text-white">
-                        {selectedCampaignData.metrics.totalReach.toLocaleString()}
-                      </p>
-                    </div>
-                    
-                    <div>
-                      <div className="flex items-center space-x-2 mb-2">
-                        <Users className="w-4 h-4 text-blue-500" />
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                          Engagement
-                        </span>
-                      </div>
-                      <p className="text-xl font-bold text-gray-900 dark:text-white">
-                        {selectedCampaignData.metrics.totalEngagement.toLocaleString()}
-                      </p>
-                    </div>
-                    
-                    <div>
-                      <div className="flex items-center space-x-2 mb-2">
-                        <Target className="w-4 h-4 text-purple-500" />
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                          Leads
-                        </span>
-                      </div>
-                      <p className="text-xl font-bold text-gray-900 dark:text-white">
-                        {selectedCampaignData.metrics.totalLeads.toLocaleString()}
-                      </p>
-                    </div>
-                    
-                    <div>
-                      <div className="flex items-center space-x-2 mb-2">
-                        <DollarSign className="w-4 h-4 text-orange-500" />
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                          ROI
-                        </span>
-                      </div>
-                      <p className="text-xl font-bold text-gray-900 dark:text-white">
-                        {selectedCampaignData.metrics.roi}x
-                      </p>
-                    </div>
-                  </div>
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    {feature.title}
+                  </h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {feature.description}
+                  </p>
                 </div>
-              </Card>
-              
-              <Card>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  Goals Progress
-                </h3>
-                <div className="space-y-4">
-                  {selectedCampaignData.goals.map((goal, index) => (
-                    <div key={index}>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 capitalize">
-                          {goal.type}
-                        </span>
-                        <span className="text-sm text-gray-500 dark:text-gray-400">
-                          {goal.current.toLocaleString()} / {goal.target.toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
-                        <div
-                          className="bg-gradient-to-r from-blue-500 to-purple-600 h-3 rounded-full transition-all duration-500"
-                          style={{ width: `${getGoalProgress(goal.current, goal.target)}%` }}
-                        ></div>
-                      </div>
-                      <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        <span>0</span>
-                        <span>{Math.round(getGoalProgress(goal.current, goal.target))}%</span>
-                        <span>{goal.target.toLocaleString()}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-
-              <Card>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  Performance Trend
-                </h3>
-                <div className="h-48">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={performanceData}>
-                      <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                      <XAxis dataKey="name" className="text-xs" />
-                      <YAxis className="text-xs" />
-                      <Tooltip 
-                        contentStyle={{ 
-                          backgroundColor: 'var(--tooltip-bg)', 
-                          border: '1px solid var(--tooltip-border)',
-                          borderRadius: '8px'
-                        }}
-                      />
-                      <Line 
-                        type="monotone" 
-                        dataKey="engagement" 
-                        stroke="#3B82F6" 
-                        strokeWidth={2}
-                        dot={{ fill: '#3B82F6', strokeWidth: 2, r: 4 }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </Card>
-
-              <Card>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  Quick Actions
-                </h3>
-                <div className="space-y-3">
-                  <Button className="w-full justify-start" variant="outline">
-                    <Eye className="w-4 h-4 mr-2" />
-                    View All Posts
-                  </Button>
-                  <Button className="w-full justify-start" variant="outline">
-                    <Target className="w-4 h-4 mr-2" />
-                    Edit Goals
-                  </Button>
-                  <Button className="w-full justify-start" variant="outline">
-                    <TrendingUp className="w-4 h-4 mr-2" />
-                    Export Report
-                  </Button>
-                </div>
-              </Card>
-            </>
-          ) : (
-            <Card>
-              <div className="text-center py-12">
-                <Target className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                  No Campaign Selected
-                </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Click on a campaign to view details and analytics.
-                </p>
               </div>
             </Card>
-          )}
+          ))}
+        </div>
+      </div>
+
+      {/* Benefits Section */}
+      <Card className="bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-800 dark:to-blue-900/20">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="text-center space-y-3">
+            <div className="inline-flex items-center justify-center w-12 h-12 bg-green-100 dark:bg-green-900/50 rounded-full">
+              <TrendingUp className="w-6 h-6 text-green-600 dark:text-green-400" />
+            </div>
+            <h4 className="font-semibold text-gray-900 dark:text-white">
+              Increase Efficiency
+            </h4>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Streamline your campaign workflow and save time with automated tools
+            </p>
+          </div>
+          
+          <div className="text-center space-y-3">
+            <div className="inline-flex items-center justify-center w-12 h-12 bg-purple-100 dark:bg-purple-900/50 rounded-full">
+              <BarChart3 className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+            </div>
+            <h4 className="font-semibold text-gray-900 dark:text-white">
+              Better Insights
+            </h4>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Make data-driven decisions with comprehensive analytics and reporting
+            </p>
+          </div>
+          
+          <div className="text-center space-y-3">
+            <div className="inline-flex items-center justify-center w-12 h-12 bg-orange-100 dark:bg-orange-900/50 rounded-full">
+              <Zap className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+            </div>
+            <h4 className="font-semibold text-gray-900 dark:text-white">
+              Optimize Performance
+            </h4>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Continuously improve your campaigns with A/B testing and optimization tools
+            </p>
+          </div>
+        </div>
+      </Card>
+
+      {/* CTA Section */}
+      <div className="text-center space-y-4">
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+          Ready to transform your campaign management?
+        </h3>
+        <p className="text-gray-600 dark:text-gray-400">
+          Be among the first to experience our powerful campaign management platform
+        </p>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Button variant="outline">
+            Learn More
+          </Button>
+          <Button>
+            Join Waitlist
+            <ArrowRight className="w-4 h-4 ml-2" />
+          </Button>
         </div>
       </div>
     </div>
