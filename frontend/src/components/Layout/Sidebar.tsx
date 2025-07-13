@@ -114,7 +114,7 @@ const Sidebar: React.FC = () => {
         <div className="flex items-center space-x-3 mb-4">
           <label style={{ cursor: 'pointer' }}>
             <img
-              src={user?.profile_pic_url && user.profile_pic_url.startsWith('http') ? user.profile_pic_url : '/default-user-icon.png'}
+              src={user?.profile_pic_url && user.profile_pic_url.startsWith('http') ? user.profile_pic_url : `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&background=3B82F6&color=fff&size=40`}
               alt={user?.name}
               className="w-10 h-10 rounded-full object-cover bg-gray-200"
             />
