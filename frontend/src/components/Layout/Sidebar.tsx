@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
-const API_BASE = import.meta.env.VITE_API_URL || '`${API_BASE}';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 const Sidebar: React.FC = () => {
   const { user, logout, token, setUser } = useAuth();
@@ -26,7 +26,7 @@ const Sidebar: React.FC = () => {
     }
     console.log('Using token for profile update:', token);
     // 1. Get presigned S3 upload URL from backend
-    const res = await fetch('`${API_BASE}/users/profile-pic-upload`', {
+    const res = await fetch(`${API_BASE}/users/profile-pic-upload`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id: user?.user_id }),
@@ -131,7 +131,7 @@ const Sidebar: React.FC = () => {
                   return;
                 }
                 // 1. Get presigned S3 upload URL from backend
-                const res = await fetch('`${API_BASE}/users/profile-pic-upload`', {
+                const res = await fetch(`${API_BASE}/users/profile-pic-upload`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ user_id: user?.user_id }),
