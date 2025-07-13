@@ -142,13 +142,22 @@ async def get_profile_pic_upload_url(request: Request):
         # If registering, generate a new user_id
         user_id = str(uuid4())
     key = f"users/{user_id}/profile.jpg"
-    s3 = boto3.client(
-        "s3",
-        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-        region_name=os.getenv("AWS_DEFAULT_REGION"),
-    )
-    bucket = os.getenv("AWS_S3_BUCKET")
+    
+    # Use IAM role credentials in Lambda, fall back to env vars for local development
+    if os.getenv('AWS_LAMBDA_FUNCTION_NAME'):
+        # Running in Lambda - use IAM role
+        s3 = boto3.client("s3", region_name="us-east-2")
+        bucket = "socials-media-098493093308"
+    else:
+        # Local development - use environment variables
+        s3 = boto3.client(
+            "s3",
+            aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+            aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+            region_name=os.getenv("AWS_DEFAULT_REGION"),
+        )
+        bucket = os.getenv("AWS_S3_BUCKET")
+    
     if not bucket:
         raise HTTPException(status_code=500, detail="AWS_S3_BUCKET environment variable not set")
     url = s3.generate_presigned_url(
